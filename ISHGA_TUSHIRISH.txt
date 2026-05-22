@@ -1,0 +1,203 @@
+================================================================================
+  MEBELLAR — LOYIHALARNI ISHGA TUSHIRISH QO'LLANMASI
+================================================================================
+
+Bu papkada 2 ta alohida Next.js loyihasi bor:
+
+  1) ADMIN PANEL (CRM)     — papka: MMebellar (asosiy)
+     Port: 3000
+     Manzil: http://localhost:3000
+
+  2) E-COMMERCE (DO'KON)   — papka: mebellar-shop
+     Port: 3001
+     Manzil: http://localhost:3001
+
+
+================================================================================
+  TALABLAR (bir marta tekshiring)
+================================================================================
+
+  • Node.js 18 yoki undan yuqori (tavsiya: 20 LTS)
+    Tekshirish:  node -v
+
+  • npm (Node bilan keladi)
+    Tekshirish:  npm -v
+
+  • Internet (birinchi marta npm install uchun)
+
+
+================================================================================
+  BIRINCHI MARTA O'RNATISH
+================================================================================
+
+Har ikkala loyiha uchun alohida "npm install" qilish kerak.
+
+--- 1-qadam: Admin panel ---
+
+  Terminal / PowerShell oching:
+
+    cd C:\Users\HP\Desktop\MMebellar
+    npm install
+
+  (5–10 daqiqa davom etishi mumkin)
+
+
+--- 2-qadam: E-commerce do'kon ---
+
+  YANGI terminal oching (yoki admin tugagach):
+
+    cd C:\Users\HP\Desktop\MMebellar\mebellar-shop
+    npm install
+
+
+================================================================================
+  ISHGA TUSHIRISH (KUNDALIK ISH)
+================================================================================
+
+Ikkala loyihani ALohida terminalda ishga tushiring.
+
+--- Terminal 1 — Admin panel (port 3000) ---
+
+    cd C:\Users\HP\Desktop\MMebellar
+    npm run dev
+
+  Tayyor bo'lganda oching:  http://localhost:3000
+
+
+--- Terminal 2 — Do'kon (port 3001) ---
+
+    cd C:\Users\HP\Desktop\MMebellar\mebellar-shop
+    npm run dev
+
+  Tayyor bo'lganda oching:  http://localhost:3001
+
+
+  Eslatma: Avval 3000, keyin 3001 — tartibi muhim emas, lekin
+  ikkalasi ham ishlab turishi kerak.
+
+
+================================================================================
+  DO'KON SAHIFALARI (localhost:3001)
+================================================================================
+
+  Bosh sahifa      http://localhost:3001/
+  Katalog          http://localhost:3001/katalog
+  Mahsulot         http://localhost:3001/mahsulot/1
+  Savatcha         http://localhost:3001/savatcha
+  Checkout         http://localhost:3001/checkout
+  Eskiz            http://localhost:3001/eskiz
+  Chat             http://localhost:3001/chat
+  Profil           http://localhost:3001/profil
+  Sevimlilar       http://localhost:3001/sevimlilar
+  Buyurtmalar      http://localhost:3001/buyurtmalar
+
+
+================================================================================
+  ADMIN SAHIFALARI (localhost:3000)
+================================================================================
+
+  Dashboard        http://localhost:3000/
+  Buyurtmalar      http://localhost:3000/buyurtmalar
+  Mijozlar         http://localhost:3000/mijozlar
+  Mahsulotlar      http://localhost:3000/mahsulotlar
+  Eskizlar         http://localhost:3000/eskizlar
+  Chat             http://localhost:3000/xabarlar
+  Ombor            http://localhost:3000/ombor
+  Hisobotlar       http://localhost:3000/hisobotlar
+  Sozlamalar       http://localhost:3000/sozlamalar
+
+
+================================================================================
+  SERVERNI TO'XTATISH
+================================================================================
+
+  Terminalda:  Ctrl + C
+
+  Ikkala terminalda ham Ctrl+C bosing.
+
+
+================================================================================
+  MUAMMOLAR VA YECHIMLAR
+================================================================================
+
+--- Dizayn yo'qolgan (oddiy matn, stil yo'q) ---
+
+  Do'kon terminalida:
+
+    Ctrl + C
+    cd C:\Users\HP\Desktop\MMebellar\mebellar-shop
+    npm run dev:clean
+
+  Brauzerda: Ctrl + Shift + R (qattiq yangilash)
+
+
+--- 500 xato / Internal Server Error / chat ishlamaydi ---
+
+  .next keshi buzilgan. Tozalang:
+
+    cd C:\Users\HP\Desktop\MMebellar\mebellar-shop
+    npm run dev:clean
+
+  Yoki qo'lda:
+
+    .next papkasini o'chiring, keyin: npm run dev
+
+
+--- Port band (address already in use) ---
+
+  Eski server hali ishlayapti. Terminalda Ctrl+C yoki
+  Task Manager dan "Node.js" jarayonini yoping.
+
+
+--- npm install xatosi ---
+
+  • Internetni tekshiring
+  • Qayta urinib ko'ring:  npm install
+  • Node versiyasini yangilang (20 LTS)
+
+
+--- Faqat bitta loyiha kerak ---
+
+  Faqat do'kon:
+    cd mebellar-shop
+    npm run dev
+    → http://localhost:3001
+
+  Faqat admin:
+    cd MMebellar
+    npm run dev
+    → http://localhost:3000
+
+
+================================================================================
+  PRODUCTION BUILD (ixtiyoriy, serverga joylash uchun)
+================================================================================
+
+  Admin:
+    cd C:\Users\HP\Desktop\MMebellar
+    npm run build
+    npm run start
+    → http://localhost:3000
+
+  Do'kon:
+    cd C:\Users\HP\Desktop\MMebellar\mebellar-shop
+    npm run build
+    npm run start
+    → http://localhost:3001
+
+
+================================================================================
+  QISQA ESLATMA
+================================================================================
+
+  | Loyiha        | Papka           | Buyruq        | Port  |
+  |---------------|-----------------|---------------|-------|
+  | Admin CRM     | MMebellar       | npm run dev   | 3000  |
+  | Do'kon        | mebellar-shop   | npm run dev   | 3001  |
+
+  Birinchi o'rnatish: har papkada npm install
+  Muammo bo'lsa do'konda: npm run dev:clean
+
+  Texnik vazifa (TZ): mebellar_webapp_TZ.txt
+
+================================================================================

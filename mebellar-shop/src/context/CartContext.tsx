@@ -1,0 +1,139 @@
+"use client";
+
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import type { CartItem, Product } from "@/lib/types";
+
+interface CartContextValue {
+  items: CartItem[];
+  addItem: (product: Product, qty?: number) => void;
+  removeItem: (productId: string) => void;
+  updateQuantity: (productId: string, quantity: number) => void;
+  clearCart: () => void;
+  total: number;
+  count: number;
+  likedIds: string[];
+  toggleLike: (productId: string) => void;
+  /** localStorage yuklanguncha false — hydration mosligi uchun */
+  hydrated: boolean;
+}
+
+const CartContext = createContext<CartContextValue | null>(null);
+const STORAGE_KEY = "mebellar-cart";
+const LIKES_KEY = "mebellar-likes";
+
+export function CartProvider({ children }: { children: React.ReactNode }) {
+  const [items, setItems] = useState<CartItem[]>([]);
+  const [likedIds, setLikedIds] = useState<string[]>([]);
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      const likes = localStorage.getItem(LIKES_KEY);
+      if (saved) setItems(JSON.parse(saved));
+      if (likes) setLikedIds(JSON.parse(likes));
+    } catch {
+      /* ignore */
+    }
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  }, [items, hydrated]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    localStorage.setItem(LIKES_KEY, JSON.stringify(likedIds));
+  }, [likedIds, hydrated]);
+
+  const addItem = useCallback((product: Product, qty = 1) => {
+    setItems((prev) => {
+      const existing = prev.find((i) => i.productId === product.id);
+      if (existing) {
+        return prev.map((i) =>
+          i.productId === product.id
+            ? { ...i, quantity: i.quantity + qty }
+            : i
+        );
+      }
+      return [
+        ...prev,
+        {
+          productId: product.id,
+          name: product.name,
+          price: product.price,
+          image: product.image,
+          quantity: qty,
+        },
+      ];
+    });
+  }, []);
+
+  const removeItem = useCallback((productId: string) => {
+    setItems((prev) => prev.filter((i) => i.productId !== productId));
+  }, []);
+
+  const updateQuantity = useCallback((productId: string, quantity: number) => {
+    if (quantity < 1) {
+      setItems((prev) => prev.filter((i) => i.productId !== productId));
+      return;
+    }
+    setItems((prev) =>
+      prev.map((i) => (i.productId === productId ? { ...i, quantity } : i))
+    );
+  }, []);
+
+  const clearCart = useCallback(() => setItems([]), []);
+
+  const toggleLike = useCallback((productId: string) => {
+    setLikedIds((prev) =>
+      prev.includes(productId)
+        ? prev.filter((id) => id !== productId)
+        : [...prev, productId]
+    );
+  }, []);
+
+  const total = useMemo(
+    () => items.reduce((s, i) => s + i.price * i.quantity, 0),
+    [items]
+  );
+
+  const count = useMemo(
+    () => items.reduce((s, i) => s + i.quantity, 0),
+    [items]
+  );
+
+  return (
+    <CartContext.Provider
+      value={{
+        items,
+        addItem,
+        removeItem,
+        updateQuantity,
+        clearCart,
+        total,
+        count,
+        likedIds,
+        toggleLike,
+        hydrated,
+      }}
+    >
+      {children}
+    </CartContext.Provider>
+  );
+}
+
+export function useCart() {
+  const ctx = useContext(CartContext);
+  if (!ctx) throw new Error("useCart must be used within CartProvider");
+  return ctx;
+}

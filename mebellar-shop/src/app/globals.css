@@ -1,0 +1,79 @@
+@import "tailwindcss";
+
+/* Tailwind: faqat shu loyiha src/ (parent lockfile aralashuvini oldini olish) */
+@source "../../src/**/*.{js,ts,jsx,tsx,mdx}";
+
+@theme {
+  --color-primary: #3d3229;
+  --color-primary-light: #5c4f42;
+  --color-accent: #f4a261;
+  --color-accent-hover: #e88b4a;
+  --color-surface: #ffffff;
+  --color-surface-muted: #faf8f5;
+  --color-footer: #3d3229;
+  --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    background-color: #faf8f5;
+    color: #3d3229;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-family: var(--font-sans);
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+@layer utilities {
+  .card {
+    @apply rounded-[20px] bg-white shadow-[0_4px_24px_rgba(61,50,41,0.08)] border border-[#ebe6df];
+  }
+  .btn-accent {
+    @apply rounded-[14px] bg-[#f4a261] px-6 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-[#e88b4a] hover:shadow-lg;
+  }
+  .btn-outline {
+    @apply rounded-[14px] border-2 border-[#3d3229] px-6 py-3 text-sm font-semibold text-[#3d3229] transition hover:bg-[#3d3229] hover:text-white;
+  }
+  .btn-icon {
+    @apply inline-flex shrink-0 items-center justify-center rounded-[14px] p-0;
+  }
+  .btn-icon-accent {
+    @apply inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-[#f4a261] p-0 text-white shadow-md transition hover:bg-[#e88b4a] hover:shadow-lg;
+  }
+  .input-field {
+    @apply w-full rounded-[14px] border border-[#e5dfd6] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#f4a261] focus:ring-2 focus:ring-[#f4a261]/25;
+  }
+  .catalog-pill {
+    @apply inline-flex items-center rounded-full px-4 py-2 text-sm font-medium transition whitespace-nowrap;
+  }
+  .catalog-pill-active {
+    @apply bg-[#f4a261] text-white shadow-sm;
+  }
+  .catalog-pill-inactive {
+    @apply bg-[#f5f0e8] text-[#6b5f52] hover:bg-[#ebe6df];
+  }
+  .text-primary {
+    color: #3d3229;
+  }
+}

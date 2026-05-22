@@ -1,0 +1,339 @@
+
+MEBELLAR WEB APP PLATFORMASI
+TEXNIK TOPSHIRIQ (TZ)
+
+====================================================
+1. LOYIHA HAQIDA
+====================================================
+
+Loyiha turi:
+- Web Application (Responsive)
+- Admin Panel + Client Platform
+
+Yo‘nalish:
+- Mebel E-commerce
+- CRM tizimi
+- Eskiz yaratish
+- Realtime chat
+
+Platforma:
+- Desktop
+- Tablet
+- Mobile responsive
+
+Til:
+- O‘zbek tili
+
+====================================================
+2. LOYIHA MAQSADI
+====================================================
+
+Foydalanuvchilar web platforma orqali:
+- mebellarni ko‘rish,
+- buyurtma qilish,
+- individual mebel o‘lchamlarini yuborish,
+- eskiz yaratish,
+- sotuvchi bilan online chat qilish,
+- buyurtmalarni kuzatish imkoniyatiga ega bo‘lishlari kerak.
+
+====================================================
+3. TEXNOLOGIYALAR
+====================================================
+
+Frontend:
+- Next.js
+
+Backend:
+- Node.js
+
+Database:
+- MongoDB
+
+Realtime:
+- Socket.io
+
+Storage:
+- AWS S3 / Firebase Storage
+
+Deployment:
+- Vercel / AWS / DigitalOcean
+
+Payment:
+- Payme
+- Click
+- Uzum Pay
+
+====================================================
+4. DIZAYN SISTEMASI
+====================================================
+
+UI Style:
+- Modern
+- Minimal
+- Premium dashboard UI
+
+Asosiy ranglar:
+- Primary: #1E1E2F
+- Accent: #F4A261
+- Background: #F5F5F5
+- White: #FFFFFF
+
+Typography:
+- Poppins
+
+Button:
+- Radius: 14px
+- Hover effect
+- Shadow effect
+
+Card Design:
+- Radius: 20px
+- Soft shadow
+- Clean spacing
+
+====================================================
+5. HEADER
+====================================================
+
+Elementlar:
+- Logo
+- Qidiruv paneli
+- Notification icon
+- Profil icon
+
+Desktop:
+- Sticky navbar
+
+Mobile:
+- Hamburger menu
+
+====================================================
+6. HOME PAGE
+====================================================
+
+Sections:
+- Hero banner
+- Kategoriyalar
+- Mashhur mahsulotlar
+- Yangi mahsulotlar
+- Tavsiya etilgan
+
+Mahsulot kartasi:
+- Rasm
+- Nomi
+- Narxi
+- Reyting
+- Like button
+
+Fon:
+- White background
+
+====================================================
+7. PRODUCT DETAIL PAGE
+====================================================
+
+Elementlar:
+- Katta image slider
+- Product info
+- Tavsif
+- O‘lchamlar
+- Material
+- Narx
+
+Buttonlar:
+- Savatchaga qo‘shish
+- Buyurtma berish
+
+Qo‘shimcha:
+- Share button
+- WhatsApp button
+
+====================================================
+8. SAVATCHA
+====================================================
+
+Elementlar:
+- Product list
+- Quantity controls
+- Total summa
+- Checkout button
+
+Desktop:
+- Two column layout
+
+====================================================
+9. CHECKOUT PAGE
+====================================================
+
+Inputlar:
+- Ism
+- Telefon
+- Manzil
+
+To‘lov:
+- Payme
+- Click
+- Uzum
+
+Button:
+- "To‘lov qilish"
+
+====================================================
+10. CRM TIZIMI
+====================================================
+
+10.1 Client List
+
+Elementlar:
+- Search
+- Filter
+- Client cards
+
+Har bir client:
+- Avatar
+- Telefon
+- Oxirgi buyurtma
+- Status
+
+10.2 Client Detail
+
+Elementlar:
+- Kontaktlar
+- Eslatmalar
+- Buyurtmalar tarixi
+
+====================================================
+11. ESKIZ YARATISH MODULI
+====================================================
+
+Maqsad:
+Individual mebel o‘lchamlarini avtomatik chizmaga aylantirish.
+
+Inputlar:
+- Uzunlik
+- Kenglik
+- Balandlik
+
+Natija:
+- 2D eskiz
+- PDF export
+- PNG export
+
+UI:
+- Light gray background
+- Technical style layout
+
+====================================================
+12. CHAT TIZIMI
+====================================================
+
+Realtime:
+- Socket.io
+
+Elementlar:
+- Message bubbles
+- File upload
+- Image upload
+- Voice message
+
+Ranglar:
+- Incoming: white
+- Outgoing: accent orange
+
+====================================================
+13. BUYURTMALAR
+====================================================
+
+Status:
+- Yangi
+- Jarayonda
+- Tugallangan
+
+Har bir order:
+- Product info
+- Client info
+- Status
+- Yetkazish manzili
+
+====================================================
+14. PROFIL
+====================================================
+
+Elementlar:
+- Avatar
+- Telefon
+- Email
+- Til tanlash
+- Chiqish
+
+Qo‘shimcha:
+- Dark mode
+
+====================================================
+15. ADMIN PANEL
+====================================================
+
+Admin imkoniyatlari:
+- Product management
+- Client management
+- Order management
+- Chat monitoring
+- Analytics
+
+Analytics:
+- Sotuv statistikasi
+- Eng ko‘p sotilgan mahsulotlar
+- Daromad grafiklari
+
+====================================================
+16. RESPONSIVE TALABLAR
+====================================================
+
+Desktop:
+- 1440px layout
+
+Tablet:
+- Responsive grid
+
+Mobile:
+- Mobile optimized UI
+
+====================================================
+17. XAVFSIZLIK
+====================================================
+
+- JWT Authentication
+- HTTPS
+- API protection
+- Role system
+- Admin permissions
+- Database backup
+- DDOS protection
+
+====================================================
+18. PERFORMANCE
+====================================================
+
+- Fast loading
+- Lazy loading
+- Optimized images
+- Cache system
+
+====================================================
+19. SEO
+====================================================
+
+- SEO optimized pages
+- Meta tags
+- Sitemap
+- Open Graph support
+
+====================================================
+20. FINAL TALABLAR
+====================================================
+
+- Platforma professional darajada bo‘lishi kerak
+- To‘liq responsive bo‘lishi kerak
+- UI/UX zamonaviy bo‘lishi kerak
+- O‘zbek tilida ishlashi kerak
+- Xavfsizlik kuchli bo‘lishi kerak
