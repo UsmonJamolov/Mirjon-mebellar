@@ -1,6 +1,7 @@
 "use client";
 
-import { Bell, Search, Menu, Globe } from "lucide-react";
+import { Bell, Search, Menu, Globe, LogOut } from "lucide-react";
+import { signOut, useSession } from "next-auth/react";
 
 interface HeaderProps {
   onMenuClick?: () => void;
@@ -9,7 +10,23 @@ interface HeaderProps {
   onBack?: () => void;
 }
 
+function initials(name?: string | null): string {
+  if (!name?.trim()) return "?";
+  return name
+    .trim()
+    .split(/\s+/)
+    .map((w) => w[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+}
+
 export function Header({ onMenuClick, title, showBack, onBack }: HeaderProps) {
+  const { data: session } = useSession();
+  const name = session?.user?.name ?? "Admin";
+  const label = initials(session?.user?.name);
+
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-gray-100 bg-white px-4 lg:px-8">
       {showBack ? (
@@ -62,12 +79,21 @@ export function Header({ onMenuClick, title, showBack, onBack }: HeaderProps) {
         </button>
         <div className="hidden md:flex items-center gap-3 pl-2 border-l border-gray-200">
           <div className="h-9 w-9 rounded-full bg-[#3b82f6] flex items-center justify-center text-white text-sm font-semibold">
-            AS
+            {label}
           </div>
           <div className="text-sm">
-            <p className="font-medium leading-tight">Abdullah Saidov</p>
+            <p className="font-medium leading-tight">{name}</p>
             <p className="text-gray-500 text-xs">Admin</p>
           </div>
+          <button
+            type="button"
+            onClick={() => signOut({ callbackUrl: "/kirish" })}
+            className="flex h-9 w-9 items-center justify-center rounded-[14px] text-gray-500 hover:bg-gray-100 hover:text-red-600"
+            aria-label="Chiqish"
+            title="Chiqish"
+          >
+            <LogOut size={18} />
+          </button>
         </div>
       </div>
     </header>

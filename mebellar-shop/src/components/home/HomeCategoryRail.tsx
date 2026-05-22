@@ -25,6 +25,7 @@ export function HomeCategoryRail({ categories }: HomeCategoryRailProps) {
                   src={cat.image}
                   alt={cat.name}
                   fill
+                  quality={70}
                   className="object-cover transition duration-700 group-hover:scale-105"
                   sizes="240px"
                 />

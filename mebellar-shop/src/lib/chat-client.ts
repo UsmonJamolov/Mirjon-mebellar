@@ -1,32 +1,34 @@
 import type { ChatSender, ChatThreadState } from "./chat-types";
 import type { SketchData } from "./sketch-types";
 
-const API = "/api/chat";
-
-/** Admin panel (3000) uchun to'liq URL */
-export function getChatApiBase(role: "shop" | "admin") {
-  if (role === "admin" && typeof window !== "undefined") {
-    return "http://localhost:3001/api/chat";
+/** Brauzer: /api/chat → Express. Server: to'g'ridan-to'g'ri Express */
+export function getChatApiBase() {
+  if (typeof window !== "undefined") {
+    return "/api/chat";
   }
-  return API;
+  const base =
+    process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") || "http://127.0.0.1:4000";
+  return `${base}/api/chat`;
 }
 
 async function parse<T>(res: Response): Promise<T> {
-  if (!res.ok) throw new Error("Chat API xatosi");
-  return res.json() as Promise<T>;
+  const data = (await res.json().catch(() => ({}))) as T & { error?: string };
+  if (!res.ok) {
+    throw new Error(data.error || `Chat API (${res.status})`);
+  }
+  return data;
 }
 
-export async function fetchChatThread(base = API): Promise<ChatThreadState> {
-  const res = await fetch(base, { cache: "no-store" });
+export async function fetchChatThread(): Promise<ChatThreadState> {
+  const res = await fetch(getChatApiBase(), { cache: "no-store" });
   return parse(res);
 }
 
 export async function sendChatMessage(
   sender: ChatSender,
-  payload: { text?: string; sketch?: SketchData },
-  base = API
+  payload: { text?: string; sketch?: SketchData; customerName?: string }
 ): Promise<ChatThreadState> {
-  const res = await fetch(base, {
+  const res = await fetch(getChatApiBase(), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ action: "message", sender, ...payload }),
@@ -36,10 +38,9 @@ export async function sendChatMessage(
 
 export async function updateChatSketch(
   sender: ChatSender,
-  sketch: SketchData,
-  base = API
+  sketch: SketchData
 ): Promise<ChatThreadState> {
-  const res = await fetch(base, {
+  const res = await fetch(getChatApiBase(), {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ action: "updateSketch", sender, sketch }),
@@ -47,14 +48,38 @@ export async function updateChatSketch(
   return parse(res);
 }
 
-export async function agreeToStartWork(
-  sender: ChatSender,
-  base = API
-): Promise<ChatThreadState> {
-  const res = await fetch(base, {
+export async function agreeToStartWork(sender: ChatSender): Promise<ChatThreadState> {
+  const res = await fetch(getChatApiBase(), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ action: "agree", sender }),
+  });
+  return parse(res);
+}
+
+export async function sendAdminHeartbeat(): Promise<ChatThreadState> {
+  const res = await fetch(getChatApiBase(), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "heartbeat", sender: "admin" }),
+  });
+  return parse(res);
+}
+
+export async function cancelChatAgreement(): Promise<ChatThreadState> {
+  const res = await fetch(getChatApiBase(), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "cancelAgreement", sender: "admin" }),
+  });
+  return parse(res);
+}
+
+export async function startNewChatOrder(): Promise<ChatThreadState> {
+  const res = await fetch(getChatApiBase(), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "newOrder", sender: "customer" }),
   });
   return parse(res);
 }

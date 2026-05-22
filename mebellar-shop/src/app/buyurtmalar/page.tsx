@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { userOrders, formatPrice, getOrderStatusLabel } from "@/lib/mock-data";
+import { fetchOrders } from "@/lib/api";
+import { formatPrice, getOrderStatusLabel } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
 const statusStyle: Record<string, string> = {
@@ -8,7 +9,9 @@ const statusStyle: Record<string, string> = {
   tugallangan: "bg-green-100 text-green-700",
 };
 
-export default function OrdersPage() {
+export default async function OrdersPage() {
+  const userOrders = await fetchOrders();
+
   return (
     <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8 lg:py-12">
       <h1 className="text-2xl font-bold mb-2">Buyurtmalarim</h1>
@@ -19,13 +22,13 @@ export default function OrdersPage() {
           <li key={order.id} className="card p-5">
             <div className="flex justify-between items-start mb-3">
               <div>
-                <p className="font-bold text-[#f4a261]">#{order.id}</p>
-                <p className="text-xs text-gray-500 mt-0.5">{order.date}</p>
+                <p className="font-semibold">#{order.id}</p>
+                <p className="text-sm text-gray-500">{order.date}</p>
               </div>
               <span
                 className={cn(
-                  "rounded-full px-3 py-1 text-xs font-medium",
-                  statusStyle[order.status]
+                  "text-xs font-medium px-3 py-1 rounded-full",
+                  statusStyle[order.status] ?? "bg-gray-100"
                 )}
               >
                 {getOrderStatusLabel(order.status)}

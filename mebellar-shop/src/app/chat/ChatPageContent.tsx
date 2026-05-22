@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { SketchAttachPanel } from "@/components/chat/SketchAttachPanel";
 import { SketchMessageCard } from "@/components/chat/SketchMessageCard";
 import { ChatAgreementBar } from "@/components/chat/ChatAgreementBar";
@@ -12,8 +13,10 @@ import {
   agreeToStartWork,
   fetchChatThread,
   sendChatMessage,
+  startNewChatOrder,
   updateChatSketch,
 } from "@/lib/chat-client";
+import { formatAdminPresence, isSketchLockedForCustomer } from "@/lib/chat-rules";
 import { consumePendingSketch } from "@/lib/sketch-storage";
 import type { ChatThreadState } from "@/lib/chat-types";
 import { formatMessageTime } from "@/lib/chat-types";
@@ -24,28 +27,70 @@ const ROLE = "customer" as const;
 
 export function ChatPageContent() {
   const searchParams = useSearchParams();
+  const { data: session } = useSession();
   const [thread, setThread] = useState<ChatThreadState | null>(null);
+  const [sendError, setSendError] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const [draftSketch, setDraftSketch] = useState<SketchData | null>(null);
   const [attachOpen, setAttachOpen] = useState(false);
   const [attachMenuOpen, setAttachMenuOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const attachRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  const load = useCallback(async () => {
+  const pollRef = useRef(false);
+
+  const load = useCallback(async (silent = false) => {
+    if (pollRef.current) return;
+    pollRef.current = true;
     try {
       const data = await fetchChatThread();
-      setThread(data);
+      setThread((prev) => {
+        if (!prev) return data;
+        const lastPrev = prev.messages[prev.messages.length - 1]?.id;
+        const lastNew = data.messages[data.messages.length - 1]?.id;
+        const same =
+          prev.messages.length === data.messages.length &&
+          lastPrev === lastNew &&
+          prev.status === data.status &&
+          prev.customerAgreed === data.customerAgreed &&
+          prev.adminAgreed === data.adminAgreed &&
+          prev.activeSketch?.version === data.activeSketch?.version &&
+          prev.adminLastSeenAt === data.adminLastSeenAt;
+        return same ? prev : data;
+      });
+      setLoadError(null);
     } catch {
-      /* retry on poll */
+      if (!silent) {
+        setLoadError(
+          "Chat yuklanmadi. mebellar-api serverini ishga tushiring (port 4000) yoki sahifani yangilang."
+        );
+      }
+    } finally {
+      pollRef.current = false;
     }
   }, []);
 
   useEffect(() => {
-    load();
-    const id = setInterval(load, 2500);
-    return () => clearInterval(id);
+    load(false);
+    const POLL_MS = 4000;
+
+    const tick = () => {
+      if (document.visibilityState === "hidden") return;
+      load(true);
+    };
+
+    const id = setInterval(tick, POLL_MS);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") load(true);
+    };
+    document.addEventListener("visibilitychange", onVisible);
+
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, [load]);
 
   useEffect(() => {
@@ -103,22 +148,51 @@ export function ChatPageContent() {
     }
   };
 
+  const handleNewOrder = async () => {
+    setLoading(true);
+    try {
+      const state = await startNewChatOrder();
+      setThread(state);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const presence = formatAdminPresence(thread?.adminLastSeenAt);
+  const sketchLocked = thread ? isSketchLockedForCustomer(thread) : false;
+
   if (!thread) {
     return (
-      <main className="max-w-3xl mx-auto px-4 py-12 text-center text-sm text-gray-500">
-        Chat yuklanmoqda...
+      <main className="max-w-7xl mx-auto px-4 py-12 text-center">
+        {loadError ? (
+          <>
+            <p className="text-sm text-red-600 mb-4">{loadError}</p>
+            <button type="button" onClick={() => load()} className="btn-accent text-sm">
+              Qayta urinish
+            </button>
+          </>
+        ) : (
+          <p className="text-sm text-gray-500">Chat yuklanmoqda...</p>
+        )}
       </main>
     );
   }
 
   return (
-    <main className="max-w-3xl mx-auto px-4 sm:px-6 flex flex-col h-[calc(100vh-8rem)] md:h-[calc(100vh-12rem)] py-4">
-      <div className="card flex-1 flex flex-col overflow-hidden p-0">
-        <div className="p-4 border-b flex items-center gap-3 bg-white">
+    <main className="max-w-7xl mx-auto px-3 sm:px-6 py-3 sm:py-4 flex flex-col min-h-0 pb-2">
+      <div className="flex flex-col gap-3 lg:grid lg:grid-cols-2 lg:gap-6 lg:flex-1 lg:min-h-[calc(100vh-9rem)]">
+        {/* Chat */}
+        <div className="card flex flex-col overflow-hidden min-h-[min(72vh,640px)] lg:min-h-0 lg:h-full shrink-0">
+        <div className="p-4 border-b flex items-center gap-3 bg-white shrink-0">
           <SupportAvatar />
           <div>
             <p className="font-semibold text-sm">Mebellar qo&apos;llab-quvvatlash</p>
-            <p className="text-xs text-green-600">Onlayn</p>
+            <p className={`text-xs ${presence.className}`}>
+              {presence.online && (
+                <span className="mr-1 inline-block h-1.5 w-1.5 rounded-full bg-green-500 align-middle" />
+              )}
+              {presence.label}
+            </p>
           </div>
         </div>
 
@@ -128,13 +202,7 @@ export function ChatPageContent() {
           adminAgreed={thread.adminAgreed}
         />
 
-        <CollaborativeSketchPanel
-          role={ROLE}
-          activeSketch={thread.activeSketch}
-          onSave={handleSketchSave}
-        />
-
-        <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
+        <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-3 bg-gray-50">
           {thread.messages.map((m) => (
             <div
               key={m.id}
@@ -164,9 +232,18 @@ export function ChatPageContent() {
           <div ref={bottomRef} />
         </div>
 
-        <ChatAgreementBar role={ROLE} thread={thread} onAgree={handleAgree} loading={loading} />
+        <ChatAgreementBar
+          role={ROLE}
+          thread={thread}
+          onAgree={handleAgree}
+          onNewOrder={handleNewOrder}
+          loading={loading}
+        />
 
         <div className="relative border-t bg-white">
+          {sendError && (
+            <p className="px-4 pt-2 text-xs text-red-600">{sendError}</p>
+          )}
           {draftSketch && (
             <div className="px-4 pt-3 flex items-start gap-2 border-b border-[#f5f0e8]">
               <div className="flex-1 min-w-0 rounded-[14px] bg-[#faf8f5] border border-[#ebe6df] px-3 py-2">
@@ -212,7 +289,7 @@ export function ChatPageContent() {
               >
                 <IconPaperclip size={20} />
               </button>
-              {attachMenuOpen && (
+              {attachMenuOpen && !sketchLocked && (
                 <div className="absolute bottom-full left-0 mb-2 w-48 rounded-[14px] border border-[#ebe6df] bg-white py-1 shadow-lg z-30">
                   <button
                     type="button"
@@ -248,9 +325,22 @@ export function ChatPageContent() {
             </button>
           </div>
         </div>
+        </div>
+
+        {/* Eskiz — desktop o'ng; mobil chat ostida */}
+        <div className="card h-auto shrink-0 overflow-hidden lg:flex lg:min-h-0 lg:h-full lg:flex-col">
+          <CollaborativeSketchPanel
+            variant="sidebar"
+            role={ROLE}
+            activeSketch={thread.activeSketch}
+            onSave={handleSketchSave}
+            sketchLocked={sketchLocked}
+          />
+        </div>
       </div>
-      <p className="text-xs text-gray-400 text-center mt-3">
-        Xabarlar saqlanadi · Admin bilan sinxron (har 2.5s)
+
+      <p className="text-[10px] text-gray-400 text-center mt-2 px-2 shrink-0 hidden sm:block">
+        Xabarlar saqlanadi · Admin bilan sinxron (har 8s)
       </p>
     </main>
   );

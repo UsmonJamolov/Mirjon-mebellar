@@ -1,0 +1,123 @@
+"use client";
+
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { signIn } from "next-auth/react";
+import { Suspense, useEffect, useState } from "react";
+import { Phone, Lock, LogIn, ArrowRight } from "lucide-react";
+import { AuthShell } from "@/components/auth/AuthShell";
+import { AuthField } from "@/components/auth/AuthField";
+import { AuthSubmitButton } from "@/components/auth/AuthSubmitButton";
+import { AuthAlert } from "@/components/auth/AuthAlert";
+import { normalizePhone } from "@/lib/phone-auth";
+
+function LoginForm() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") ?? "/profil";
+  const urlError = searchParams.get("error");
+
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (urlError === "Configuration") {
+      setError("Auth sozlamasi yangilandi. Qayta urinib ko'ring.");
+      router.replace("/kirish");
+    }
+  }, [urlError, router]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    const res = await signIn("credentials", {
+      email: normalizePhone(phone),
+      password,
+      redirect: false,
+    });
+
+    setLoading(false);
+
+    if (res?.error) {
+      setError("Telefon yoki parol noto'g'ri");
+      return;
+    }
+
+    router.push(callbackUrl);
+    router.refresh();
+  };
+
+  return (
+    <AuthShell
+      badge="Kirish"
+      title="Xush kelibsiz"
+      footer={
+        <>
+          Hisobingiz yo&apos;qmi?{" "}
+          <Link
+            href="/royxatdan-otish"
+            className="inline-flex items-center gap-1 font-semibold text-[#c97b3f] hover:text-[#e88b4a]"
+          >
+            Ro&apos;yxatdan o&apos;tish
+            <ArrowRight size={12} />
+          </Link>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-2.5 lg:space-y-4">
+        {error && <AuthAlert message={error} />}
+
+        <AuthField
+          id="login-phone"
+          label="Telefon"
+          type="tel"
+          icon={Phone}
+          value={phone}
+          onChange={setPhone}
+          placeholder="+998 90 123 45 67"
+          required
+          autoComplete="tel"
+          delay={40}
+        />
+
+        <AuthField
+          id="login-password"
+          label="Parol"
+          type="password"
+          icon={Lock}
+          value={password}
+          onChange={setPassword}
+          placeholder="••••••••"
+          required
+          autoComplete="current-password"
+          delay={80}
+        />
+
+        <AuthSubmitButton
+          loading={loading}
+          label="Kirish"
+          loadingLabel="Kirish..."
+          icon={LogIn}
+        />
+      </form>
+    </AuthShell>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="auth-page flex h-[calc(100dvh-3.5rem)] items-center justify-center text-[#6b5f52]">
+          Yuklanmoqda...
+        </main>
+      }
+    >
+      <LoginForm />
+    </Suspense>
+  );
+}

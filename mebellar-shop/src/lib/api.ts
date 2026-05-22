@@ -1,0 +1,82 @@
+import { API_BASE } from "./api-config";
+import type { Category, Product, UserOrder } from "./types";
+import { categories as mockCategories, products as mockProducts, userOrders as mockOrders } from "./mock-data";
+
+async function get<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...init,
+    headers: { "Content-Type": "application/json", ...init?.headers },
+  });
+  if (!res.ok) throw new Error(`API ${res.status}: ${path}`);
+  return res.json() as Promise<T>;
+}
+
+export async function fetchCategories(): Promise<Category[]> {
+  try {
+    return await get<Category[]>("/api/categories");
+  } catch {
+    return mockCategories;
+  }
+}
+
+export async function fetchProducts(params?: {
+  cat?: string;
+  q?: string;
+  popular?: boolean;
+  recommended?: boolean;
+}): Promise<Product[]> {
+  try {
+    const qs = new URLSearchParams();
+    if (params?.cat) qs.set("cat", params.cat);
+    if (params?.q) qs.set("q", params.q);
+    if (params?.popular) qs.set("popular", "true");
+    if (params?.recommended) qs.set("recommended", "true");
+    const query = qs.toString() ? `?${qs}` : "";
+    return await get<Product[]>(`/api/products${query}`, {
+      next: { revalidate: 30 },
+    });
+  } catch {
+    let list = [...mockProducts];
+    if (params?.cat) {
+      const name = mockCategories.find((c) => c.slug === params.cat)?.name;
+      if (name) list = list.filter((p) => p.category === name);
+    }
+    if (params?.q) list = list.filter((p) => p.name.toLowerCase().includes(params.q!.toLowerCase()));
+    if (params?.popular) list = list.filter((p) => p.isPopular);
+    if (params?.recommended) list = list.filter((p) => p.isRecommended);
+    return list;
+  }
+}
+
+export async function fetchProduct(id: string): Promise<Product | null> {
+  try {
+    return await get<Product>(`/api/products/${id}`, { cache: "no-store" });
+  } catch {
+    return mockProducts.find((p) => p.id === id) ?? null;
+  }
+}
+
+export async function fetchOrders(): Promise<UserOrder[]> {
+  try {
+    return await get<UserOrder[]>("/api/orders", { cache: "no-store" });
+  } catch {
+    return mockOrders;
+  }
+}
+
+export async function createOrder(body: {
+  customerName?: string;
+  customerPhone?: string;
+  customerAddress?: string;
+  items: { name: string; quantity: number; productId?: string; price?: number }[];
+  total: number;
+}): Promise<UserOrder> {
+  const res = await fetch(`${API_BASE}/api/orders`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error("Buyurtma yaratilmadi");
+  return res.json() as Promise<UserOrder>;
+}

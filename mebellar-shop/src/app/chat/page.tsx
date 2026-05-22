@@ -5,7 +5,7 @@ export default function ChatPage() {
   return (
     <Suspense
       fallback={
-        <main className="max-w-3xl mx-auto px-4 py-12 text-center text-gray-500 text-sm">
+        <main className="max-w-7xl mx-auto px-4 py-12 text-center text-gray-500 text-sm">
           Chat yuklanmoqda...
         </main>
       }

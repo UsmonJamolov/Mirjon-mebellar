@@ -51,6 +51,7 @@ export function HomeArchiveList({ products, title = "Arxiv" }: HomeArchiveListPr
                       src={p.image}
                       alt=""
                       fill
+                      quality={70}
                       className="object-cover opacity-90 group-hover:scale-105 transition duration-500"
                       sizes="96px"
                     />

@@ -273,8 +273,12 @@ export const salesByCategory = [
   { name: "Boshqa", value: 15, color: "#8b5cf6" },
 ];
 
+/** Server va brauzerda bir xil chiqishi uchun locale ishlatilmaydi */
 export function formatPrice(n: number): string {
-  return n.toLocaleString("uz-UZ") + " so'm";
+  const formatted = Math.round(n)
+    .toString()
+    .replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  return `${formatted} so'm`;
 }
 
 export function getStatusLabel(status: string): string {

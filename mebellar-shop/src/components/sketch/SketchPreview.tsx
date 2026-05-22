@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import {
   computeLayout,
   drawFront,
@@ -14,6 +15,8 @@ interface SketchPreviewProps {
   height: number;
   type?: string;
   material?: string;
+  /** Chat yon paneli — faqat chizma, qisqaroq */
+  compact?: boolean;
 }
 
 function DimHorizontal({
@@ -89,30 +92,166 @@ function ViewLabel({ x, y, text }: { x: number; y: number; text: string }) {
   );
 }
 
+function SketchSvg({
+  length,
+  width,
+  height,
+  type,
+}: {
+  length: number;
+  width: number;
+  height: number;
+  type: string;
+}) {
+  const uid = useId().replace(/:/g, "");
+  const gridId = `sketchGrid-${uid}`;
+  const fillId = `panelFill-${uid}`;
+  const L = computeLayout(
+    Math.max(length, 1),
+    Math.max(width, 1),
+    Math.max(height, 1)
+  );
+  const len = Math.max(length, 1);
+  const frontPath = drawFront(type, L.frontX, L.frontY, L.fw, L.fh, len);
+  const sidePath = drawSide(type, L.sideX, L.sideY, L.sw, L.sh);
+  const topPath = drawTop(type, L.topX, L.topY, L.tw, L.td, len);
+
+  return (
+    <svg
+      viewBox={`0 0 ${L.viewW} ${L.viewH}`}
+      className="mx-auto block h-auto w-full max-h-[280px]"
+      role="img"
+      aria-label={`${type} eskizi: ${length}×${width}×${height} sm`}
+    >
+      <defs>
+        <pattern id={gridId} width="16" height="16" patternUnits="userSpaceOnUse">
+          <path d="M 16 0 L 0 0 0 16" fill="none" stroke={C.grid} strokeWidth="0.5" />
+        </pattern>
+        <linearGradient id={fillId} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#fff" />
+          <stop offset="100%" stopColor={C.fillPanel} />
+        </linearGradient>
+      </defs>
+      <rect width="100%" height="100%" fill={`url(#${gridId})`} />
+      <ViewLabel x={L.frontX} y={L.frontY - 8} text="Oldindan" />
+      <rect
+        x={L.frontX - 4}
+        y={L.frontY - 4}
+        width={L.fw + 8}
+        height={L.fh + 8}
+        rx="4"
+        fill={`url(#${fillId})`}
+        stroke={C.grid}
+        strokeWidth={1}
+      />
+      <path
+        d={frontPath}
+        fill={C.fillAccent}
+        fillOpacity={0.35}
+        stroke={C.stroke}
+        strokeWidth={1.75}
+        strokeLinejoin="round"
+      />
+      <path d={frontPath} fill="none" stroke={C.stroke} strokeWidth={1.75} strokeLinejoin="round" />
+      <DimHorizontal x1={L.frontX} x2={L.frontX + L.fw} y={L.frontY} label={`${length} sm`} />
+      <DimVertical
+        x={L.frontX + L.fw}
+        y1={L.frontY}
+        y2={L.frontY + L.fh}
+        label={`${height} sm`}
+        offset={20}
+      />
+      <ViewLabel x={L.sideX} y={L.sideY - 8} text="Yon tomondan" />
+      <rect
+        x={L.sideX - 4}
+        y={L.sideY - 4}
+        width={L.sw + 8}
+        height={L.sh + 8}
+        rx="4"
+        fill={`url(#${fillId})`}
+        stroke={C.grid}
+        strokeWidth={1}
+      />
+      <path
+        d={sidePath}
+        fill={C.fillAccent}
+        fillOpacity={0.25}
+        stroke={C.stroke}
+        strokeWidth={1.75}
+        strokeLinejoin="round"
+      />
+      <path d={sidePath} fill="none" stroke={C.stroke} strokeWidth={1.75} strokeLinejoin="round" />
+      <DimHorizontal
+        x1={L.sideX}
+        x2={L.sideX + L.sw}
+        y={L.sideY + L.sh}
+        label={`${width} sm`}
+        offset={-16}
+      />
+      <ViewLabel x={L.topX} y={L.topY - 8} text="Reja (yuqoridan)" />
+      <rect
+        x={L.topX - 4}
+        y={L.topY - 4}
+        width={L.tw + 8}
+        height={L.td + 8}
+        rx="4"
+        fill={`url(#${fillId})`}
+        stroke={C.grid}
+        strokeWidth={1}
+      />
+      <path
+        d={topPath}
+        fill={C.fillAccent}
+        fillOpacity={0.2}
+        stroke={C.stroke}
+        strokeWidth={1.75}
+        strokeLinejoin="round"
+      />
+      <path d={topPath} fill="none" stroke={C.stroke} strokeWidth={1.75} strokeLinejoin="round" />
+      <DimHorizontal
+        x1={L.topX}
+        x2={L.topX + L.tw}
+        y={L.topY + L.td}
+        label={`${length} sm`}
+        offset={-14}
+      />
+      <DimVertical
+        x={L.topX + L.tw}
+        y1={L.topY}
+        y2={L.topY + L.td}
+        label={`${width} sm`}
+        offset={18}
+      />
+    </svg>
+  );
+}
+
 export function SketchPreview({
   length,
   width,
   height,
   type = "Shkaf",
   material,
+  compact = false,
 }: SketchPreviewProps) {
-  const L = computeLayout(
-    Math.max(length, 1),
-    Math.max(width, 1),
-    Math.max(height, 1)
-  );
-
-  const len = Math.max(length, 1);
-  const frontPath = drawFront(type, L.frontX, L.frontY, L.fw, L.fh, len);
-  const sidePath = drawSide(type, L.sideX, L.sideY, L.sw, L.sh);
-  const topPath = drawTop(type, L.topX, L.topY, L.tw, L.td, len);
-
   const typeIcon: Record<string, string> = {
     Shkaf: "🗄️",
     Oshxona: "🍳",
     Stol: "🪑",
     Divan: "🛋️",
   };
+
+  if (compact) {
+    return (
+      <div className="w-full overflow-hidden rounded-[12px] border border-[#ebe6df] bg-[#faf8f5] p-2">
+        <p className="mb-2 text-[10px] font-medium uppercase tracking-wide text-[#6b5f52]">
+          {type} · {length}×{width}×{height} sm
+          {material ? ` · ${material}` : ""}
+        </p>
+        <SketchSvg length={length} width={width} height={height} type={type} />
+      </div>
+    );
+  }
 
   return (
     <div className="overflow-hidden rounded-[20px] border border-[#ebe6df] bg-[#faf8f5] shadow-inner">
@@ -136,133 +275,7 @@ export function SketchPreview({
       </div>
 
       <div className="relative p-3 sm:p-4">
-        <svg
-          viewBox={`0 0 ${L.viewW} ${L.viewH}`}
-          className="mx-auto h-auto w-full max-w-lg"
-          role="img"
-          aria-label={`${type} eskizi: ${length}×${width}×${height} sm`}
-        >
-          <defs>
-            <pattern id="sketchGrid" width="16" height="16" patternUnits="userSpaceOnUse">
-              <path d="M 16 0 L 0 0 0 16" fill="none" stroke={C.grid} strokeWidth="0.5" />
-            </pattern>
-            <linearGradient id="panelFill" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#fff" />
-              <stop offset="100%" stopColor={C.fillPanel} />
-            </linearGradient>
-          </defs>
-
-          <rect width="100%" height="100%" fill="url(#sketchGrid)" />
-
-          {/* Oldindan */}
-          <ViewLabel x={L.frontX} y={L.frontY - 8} text="Oldindan" />
-          <rect
-            x={L.frontX - 4}
-            y={L.frontY - 4}
-            width={L.fw + 8}
-            height={L.fh + 8}
-            rx="4"
-            fill="url(#panelFill)"
-            stroke={C.grid}
-            strokeWidth={1}
-          />
-          <path
-            d={frontPath}
-            fill={C.fillAccent}
-            fillOpacity={0.35}
-            stroke={C.stroke}
-            strokeWidth={1.75}
-            strokeLinejoin="round"
-          />
-          <path
-            d={frontPath}
-            fill="none"
-            stroke={C.stroke}
-            strokeWidth={1.75}
-            strokeLinejoin="round"
-          />
-
-          <DimHorizontal
-            x1={L.frontX}
-            x2={L.frontX + L.fw}
-            y={L.frontY}
-            label={`${length} sm`}
-          />
-          <DimVertical
-            x={L.frontX + L.fw}
-            y1={L.frontY}
-            y2={L.frontY + L.fh}
-            label={`${height} sm`}
-            offset={20}
-          />
-
-          {/* Yon */}
-          <ViewLabel x={L.sideX} y={L.sideY - 8} text="Yon tomondan" />
-          <rect
-            x={L.sideX - 4}
-            y={L.sideY - 4}
-            width={L.sw + 8}
-            height={L.sh + 8}
-            rx="4"
-            fill="url(#panelFill)"
-            stroke={C.grid}
-            strokeWidth={1}
-          />
-          <path
-            d={sidePath}
-            fill={C.fillAccent}
-            fillOpacity={0.25}
-            stroke={C.stroke}
-            strokeWidth={1.75}
-            strokeLinejoin="round"
-          />
-          <path d={sidePath} fill="none" stroke={C.stroke} strokeWidth={1.75} strokeLinejoin="round" />
-
-          <DimHorizontal
-            x1={L.sideX}
-            x2={L.sideX + L.sw}
-            y={L.sideY + L.sh}
-            label={`${width} sm`}
-            offset={-16}
-          />
-
-          {/* Reja */}
-          <ViewLabel x={L.topX} y={L.topY - 8} text="Reja (yuqoridan)" />
-          <rect
-            x={L.topX - 4}
-            y={L.topY - 4}
-            width={L.tw + 8}
-            height={L.td + 8}
-            rx="4"
-            fill="url(#panelFill)"
-            stroke={C.grid}
-            strokeWidth={1}
-          />
-          <path
-            d={topPath}
-            fill={C.fillAccent}
-            fillOpacity={0.2}
-            stroke={C.stroke}
-            strokeWidth={1.75}
-            strokeLinejoin="round"
-          />
-          <path d={topPath} fill="none" stroke={C.stroke} strokeWidth={1.75} strokeLinejoin="round" />
-
-          <DimHorizontal
-            x1={L.topX}
-            x2={L.topX + L.tw}
-            y={L.topY + L.td}
-            label={`${length} sm`}
-            offset={-14}
-          />
-          <DimVertical
-            x={L.topX + L.tw}
-            y1={L.topY}
-            y2={L.topY + L.td}
-            label={`${width} sm`}
-            offset={18}
-          />
-        </svg>
+        <SketchSvg length={length} width={width} height={height} type={type} />
       </div>
 
       <div className="flex flex-wrap gap-2 border-t border-[#ebe6df] bg-white/60 px-4 py-3">

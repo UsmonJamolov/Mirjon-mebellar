@@ -41,4 +41,9 @@ next-env.d.ts
 
 # local runtime data (MongoDB, chat store)
 /data/mongodb/
+/data/mongod.log
 /data/chat-store.json
+
+# Express API
+mebellar-api/node_modules/
+mebellar-api/.env

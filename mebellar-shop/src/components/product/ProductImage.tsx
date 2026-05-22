@@ -39,7 +39,7 @@ export function ProductImage({
       sizes={sizes}
       priority={priority}
       onError={() => setError(true)}
-      unoptimized={src.startsWith("/") || src.includes("images.unsplash.com")}
+      quality={75}
     />
   );
 }

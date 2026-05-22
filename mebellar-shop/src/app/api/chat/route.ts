@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import {
-  addMessage,
-  readChatStore,
-  setAgreement,
-  updateActiveSketch,
-} from "@/lib/chat-persistence";
-import type { SketchData } from "@/lib/sketch-types";
+
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") || "http://127.0.0.1:4000";
+const EXPRESS_CHAT = `${API_BASE}/api/chat`;
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "http://localhost:3000",
@@ -13,44 +10,68 @@ const CORS_HEADERS = {
   "Access-Control-Allow-Headers": "Content-Type",
 };
 
-function json(data: unknown, status = 200) {
-  return NextResponse.json(data, { status, headers: CORS_HEADERS });
+async function proxyToExpress(req: Request) {
+  const url = new URL(req.url);
+  const target = `${EXPRESS_CHAT}${url.search}`;
+
+  const init: RequestInit = {
+    method: req.method,
+    headers: { "Content-Type": "application/json" },
+    cache: "no-store",
+  };
+
+  if (req.method !== "GET" && req.method !== "HEAD") {
+    init.body = await req.text();
+  }
+
+  const res = await fetch(target, init);
+  const body = await res.text();
+
+  return new NextResponse(body, {
+    status: res.status,
+    headers: {
+      "Content-Type": "application/json",
+      ...CORS_HEADERS,
+    },
+  });
 }
 
 export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: CORS_HEADERS });
 }
 
-export async function GET() {
-  const state = await readChatStore();
-  return json(state);
+export async function GET(req: NextRequest) {
+  try {
+    return await proxyToExpress(req);
+  } catch (e) {
+    console.error("[chat] Express ulanmadi:", e);
+    return NextResponse.json(
+      { error: "Chat serveri ishlamayapti (port 4000). mebellar-api ni ishga tushiring." },
+      { status: 503, headers: CORS_HEADERS }
+    );
+  }
 }
 
 export async function POST(req: NextRequest) {
-  const body = await req.json();
-  const action = body.action as string;
-
-  if (action === "message") {
-    const state = await addMessage(body.sender, {
-      text: body.text,
-      sketch: body.sketch as SketchData | undefined,
-    });
-    return json(state);
+  try {
+    return await proxyToExpress(req);
+  } catch (e) {
+    console.error("[chat] POST proxy:", e);
+    return NextResponse.json(
+      { error: "Xabar yuborilmadi — API ulanmadi" },
+      { status: 503, headers: CORS_HEADERS }
+    );
   }
-
-  if (action === "agree") {
-    const state = await setAgreement(body.sender);
-    return json(state);
-  }
-
-  return json({ error: "Unknown action" }, 400);
 }
 
 export async function PATCH(req: NextRequest) {
-  const body = await req.json();
-  if (body.action === "updateSketch") {
-    const state = await updateActiveSketch(body.sketch, body.sender);
-    return json(state);
+  try {
+    return await proxyToExpress(req);
+  } catch (e) {
+    console.error("[chat] PATCH proxy:", e);
+    return NextResponse.json(
+      { error: "Eskiz saqlanmadi — API ulanmadi" },
+      { status: 503, headers: CORS_HEADERS }
+    );
   }
-  return json({ error: "Unknown action" }, 400);
 }

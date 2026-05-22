@@ -211,7 +211,7 @@ Ikkala loyihani ALohida terminalda ishga tushiring.
     (MMebellar papkasida)
 
   Compass ulanish:
-    mongodb://localhost:27017
+    mongodb://127.0.0.1:27017/m-mebellar
 
   Ma'lumotlar joyi:
     MMebellar\data\mongodb

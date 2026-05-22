@@ -1,7 +1,8 @@
 import { readFile, writeFile } from "fs/promises";
 import path from "path";
-import type { ChatMessage, ChatOrderStatus, ChatThreadState } from "./chat-types";
+import type { ChatMessage, ChatThreadState } from "./chat-types";
 import type { SketchData } from "./sketch-types";
+import { isOrderStarted } from "./chat-rules";
 
 const STORE_PATH = path.join(process.cwd(), "..", "data", "chat-store.json");
 
@@ -20,12 +21,19 @@ const DEFAULT_STATE: ChatThreadState = {
     },
   ],
   activeSketch: null,
+  adminLastSeenAt: null,
+  orderRound: 1,
 };
 
 export async function readChatStore(): Promise<ChatThreadState> {
   try {
     const raw = await readFile(STORE_PATH, "utf-8");
-    return JSON.parse(raw) as ChatThreadState;
+    const parsed = JSON.parse(raw) as ChatThreadState;
+    return {
+      ...DEFAULT_STATE,
+      ...parsed,
+      orderRound: parsed.orderRound ?? 1,
+    };
   } catch {
     await writeChatStore(DEFAULT_STATE);
     return DEFAULT_STATE;
@@ -40,11 +48,18 @@ function newId(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function resolveStatus(customerAgreed: boolean, adminAgreed: boolean): ChatOrderStatus {
-  if (customerAgreed && adminAgreed) return "buyurtma_boshlandi";
-  if (customerAgreed) return "mijoz_rozi";
-  if (adminAgreed) return "sotuvchi_rozi";
-  return "kelishuv";
+function resolveStatus(customerAgreed: boolean, adminAgreed: boolean) {
+  if (customerAgreed && adminAgreed) return "buyurtma_boshlandi" as const;
+  if (customerAgreed) return "mijoz_rozi" as const;
+  if (adminAgreed) return "sotuvchi_rozi" as const;
+  return "kelishuv" as const;
+}
+
+export async function touchAdminPresence(): Promise<ChatThreadState> {
+  const state = await readChatStore();
+  state.adminLastSeenAt = new Date().toISOString();
+  await writeChatStore(state);
+  return state;
 }
 
 export async function addMessage(
@@ -52,6 +67,11 @@ export async function addMessage(
   payload: { text?: string; sketch?: SketchData }
 ): Promise<ChatThreadState> {
   const state = await readChatStore();
+
+  if (payload.sketch && sender === "customer" && isOrderStarted(state)) {
+    throw new Error("Eskiz qulflangan");
+  }
+
   const msg: ChatMessage = {
     id: newId("msg"),
     sender,
@@ -79,24 +99,25 @@ export async function updateActiveSketch(
   sender: ChatMessage["sender"]
 ): Promise<ChatThreadState> {
   const state = await readChatStore();
+
+  if (sender === "customer" && isOrderStarted(state)) {
+    throw new Error("Kelishuvdan keyin mijoz eskizni o'zgartira olmaydi");
+  }
+
   state.activeSketch = {
     data: { ...sketch },
     updatedAt: new Date().toISOString(),
     updatedBy: sender,
     version: (state.activeSketch?.version ?? 0) + 1,
   };
-  state.messages.push({
-    id: newId("msg"),
-    sender,
-    text: `Eskiz yangilandi (${sender === "customer" ? "mijoz" : "sotuvchi"})`,
-    createdAt: new Date().toISOString(),
-  });
+
   await writeChatStore(state);
   return state;
 }
 
 export async function setAgreement(sender: ChatMessage["sender"]): Promise<ChatThreadState> {
   const state = await readChatStore();
+
   if (sender === "customer") state.customerAgreed = true;
   else state.adminAgreed = true;
 
@@ -106,7 +127,7 @@ export async function setAgreement(sender: ChatMessage["sender"]): Promise<ChatT
     state.messages.push({
       id: newId("msg"),
       sender: "admin",
-      text: "✅ Ikkala tomondan kelishildi. Buyurtma qabul qilindi — ish boshlandi!",
+      text: "✅ Ikkala tomondan kelishildi. Buyurtma qabul qilindi — eskiz sotuvchi nazoratida.",
       createdAt: new Date().toISOString(),
     });
   } else {
@@ -119,6 +140,39 @@ export async function setAgreement(sender: ChatMessage["sender"]): Promise<ChatT
     });
   }
 
+  await writeChatStore(state);
+  return state;
+}
+
+export async function cancelAgreement(): Promise<ChatThreadState> {
+  const state = await readChatStore();
+  state.customerAgreed = false;
+  state.adminAgreed = false;
+  state.status = "kelishuv";
+  state.messages.push({
+    id: newId("msg"),
+    sender: "admin",
+    text: "⚠️ Sotuvchi kelishuvni bekor qildi. Eskiz va shartlar qayta muhokama qilinadi.",
+    createdAt: new Date().toISOString(),
+  });
+  await writeChatStore(state);
+  return state;
+}
+
+export async function startNewOrder(): Promise<ChatThreadState> {
+  const state = await readChatStore();
+  const round = (state.orderRound ?? 1) + 1;
+  state.orderRound = round;
+  state.status = "kelishuv";
+  state.customerAgreed = false;
+  state.adminAgreed = false;
+  state.activeSketch = null;
+  state.messages.push({
+    id: newId("msg"),
+    sender: "admin",
+    text: `🆕 Yangi buyurtma #${round} — yangi eskiz va ikki tomonlama kelishuv boshlandi.`,
+    createdAt: new Date().toISOString(),
+  });
   await writeChatStore(state);
   return state;
 }

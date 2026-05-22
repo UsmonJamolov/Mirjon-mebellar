@@ -31,6 +31,8 @@ export interface ChatThreadState {
   adminAgreed: boolean;
   messages: ChatMessage[];
   activeSketch: ActiveSketch | null;
+  adminLastSeenAt?: string | null;
+  orderRound?: number;
 }
 
 export const CHAT_STATUS_LABELS: Record<ChatOrderStatus, string> = {

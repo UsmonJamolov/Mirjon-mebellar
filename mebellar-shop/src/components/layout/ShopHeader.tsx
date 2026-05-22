@@ -6,13 +6,15 @@ import { useState } from "react";
 import {
   Search,
   ShoppingCart,
-  User,
   Menu,
   X,
   Heart,
 } from "lucide-react";
+import { useSession } from "next-auth/react";
 import { useCart } from "@/context/CartContext";
 import { BrandLogo } from "@/components/ui/BrandLogo";
+import { ProfileNavLink } from "@/components/layout/ProfileNavLink";
+import { isAuthRoute, isNavActive } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
@@ -25,9 +27,42 @@ const navLinks = [
 export function ShopHeader() {
   const pathname = usePathname();
   const isHome = pathname === "/";
+  const isAuth = isAuthRoute(pathname);
+  const isProfile = pathname === "/profil" || pathname.startsWith("/profil/");
+  const { data: session } = useSession();
+
+  const profileLinkClass = (onHome: boolean) => {
+    if (session?.user) {
+      return "inline-flex shrink-0 items-center justify-center transition-opacity hover:opacity-85";
+    }
+    return cn(
+      "rounded-[14px] p-2 transition",
+      onHome ? "hover:bg-white/10 text-white" : "hover:bg-gray-100 text-gray-600 dark:hover:bg-[#3d3229] dark:text-[#f5f0e8]",
+      isProfile &&
+        (onHome
+          ? "bg-white/15 text-[#f4a261]"
+          : "bg-[#f4a261]/15 text-[#c97b3f] dark:bg-[#f4a261]/20")
+    );
+  };
   const { count, hydrated } = useCart();
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+
+  if (isAuth) {
+    return (
+      <header className="sticky top-0 z-50 w-full border-b border-[#ebe6df] bg-white/95 backdrop-blur-md shadow-sm dark:border-[#3d3229] dark:bg-[#2a221c]/95">
+        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
+          <BrandLogo showText={false} />
+          <ProfileNavLink
+            href={session ? "/profil" : "/kirish"}
+            className={profileLinkClass(false)}
+            active={isProfile}
+            iconSize={22}
+          />
+        </div>
+      </header>
+    );
+  }
 
   return (
     <header
@@ -35,7 +70,7 @@ export function ShopHeader() {
         "top-0 z-50 w-full transition-colors duration-300",
         isHome
           ? "absolute bg-transparent border-b border-white/10"
-          : "sticky bg-white/95 backdrop-blur-md border-b border-[#ebe6df] shadow-sm"
+          : "sticky bg-white/95 backdrop-blur-md border-b border-[#ebe6df] shadow-sm dark:border-[#3d3229] dark:bg-[#2a221c]/95"
       )}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -56,18 +91,30 @@ export function ShopHeader() {
           <BrandLogo inverted={isHome} showText={false} className="sm:hidden" />
 
           <nav className="hidden lg:flex items-center gap-8 ml-8">
-            {navLinks.map((l) => (
-              <Link
-                key={l.href}
-                href={l.href}
-                className={cn(
-                  "text-sm font-medium transition",
-                  isHome ? "text-white/80 hover:text-[#f4a261]" : "text-gray-600 hover:text-[#f4a261]"
-                )}
-              >
-                {l.label}
-              </Link>
-            ))}
+            {navLinks.map((l) => {
+              const active = isNavActive(l.href, pathname);
+              return (
+                <Link
+                  key={l.href}
+                  href={l.href}
+                  className={cn(
+                    "text-sm font-medium transition relative pb-0.5",
+                    isHome
+                      ? active
+                        ? "text-[#f4a261]"
+                        : "text-white/80 hover:text-[#f4a261]"
+                      : active
+                        ? "text-[#f4a261] font-semibold"
+                        : "text-gray-600 hover:text-[#f4a261]",
+                    active &&
+                      "after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-[#f4a261] after:rounded-full"
+                  )}
+                  aria-current={active ? "page" : undefined}
+                >
+                  {l.label}
+                </Link>
+              );
+            })}
           </nav>
 
           <div className="hidden md:flex flex-1 max-w-md mx-auto relative">
@@ -128,16 +175,13 @@ export function ShopHeader() {
                 </span>
               )}
             </Link>
-            <Link
-              href="/profil"
-              className={cn(
-                "p-2 rounded-[14px]",
-                isHome ? "hover:bg-white/10 text-white" : "hover:bg-gray-100"
-              )}
-              aria-label="Profil"
-            >
-              <User size={20} />
-            </Link>
+            <ProfileNavLink
+              href={session ? "/profil" : "/kirish"}
+              className={profileLinkClass(isHome)}
+              active={isProfile}
+              onHome={isHome}
+              iconSize={20}
+            />
           </div>
         </div>
 
@@ -165,16 +209,25 @@ export function ShopHeader() {
         )}
       >
         <nav className="px-4 py-4 space-y-1 bg-white">
-          {navLinks.map((l) => (
-            <Link
-              key={l.href}
-              href={l.href}
-              onClick={() => setMenuOpen(false)}
-              className="block px-4 py-3 rounded-[14px] text-sm font-medium hover:bg-gray-50"
-            >
-              {l.label}
-            </Link>
-          ))}
+          {navLinks.map((l) => {
+            const active = isNavActive(l.href, pathname);
+            return (
+              <Link
+                key={l.href}
+                href={l.href}
+                onClick={() => setMenuOpen(false)}
+                className={cn(
+                  "block px-4 py-3 rounded-[14px] text-sm font-medium transition",
+                  active
+                    ? "bg-[#f4a261]/15 text-[#c97b3f] font-semibold"
+                    : "hover:bg-gray-50 text-gray-700"
+                )}
+                aria-current={active ? "page" : undefined}
+              >
+                {l.label}
+              </Link>
+            );
+          })}
           <Link
             href="/buyurtmalar"
             onClick={() => setMenuOpen(false)}

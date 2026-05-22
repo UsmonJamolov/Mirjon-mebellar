@@ -3,12 +3,19 @@ import { HomeCategoryRail } from "@/components/home/HomeCategoryRail";
 import { HomeEditorialHero } from "@/components/home/HomeEditorialHero";
 import { HomeStudioStrip } from "@/components/home/HomeStudioStrip";
 import { ProductCard } from "@/components/product/ProductCard";
-import { categories, products } from "@/lib/mock-data";
+import { fetchCategories, fetchProducts } from "@/lib/api";
 import Link from "next/link";
 
-export default function HomePage() {
-  const archive = products.slice(0, 6);
-  const featured = products.filter((p) => p.isRecommended || p.isPopular).slice(0, 4);
+export default async function HomePage() {
+  const [categories, allProducts] = await Promise.all([
+    fetchCategories(),
+    fetchProducts(),
+  ]);
+
+  const archive = allProducts.slice(0, 6);
+  const featured = allProducts
+    .filter((p) => p.isRecommended || p.isPopular)
+    .slice(0, 4);
 
   return (
     <main className="bg-[#faf8f5]">

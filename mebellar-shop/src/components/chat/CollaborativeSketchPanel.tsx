@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Lock } from "lucide-react";
 import { SketchPreview } from "@/components/sketch/SketchPreview";
 import { DimensionInput } from "@/components/sketch/DimensionInput";
+import { ChatAccordion } from "@/components/chat/ChatAccordion";
 import type { ChatSender, ActiveSketch } from "@/lib/chat-types";
 import type { SketchData } from "@/lib/sketch-types";
 import { formatSketchSummary } from "@/lib/sketch-types";
@@ -14,18 +16,29 @@ interface CollaborativeSketchPanelProps {
   role: ChatSender;
   activeSketch: ActiveSketch | null;
   onSave: (sketch: SketchData) => Promise<void>;
+  sketchLocked?: boolean;
   onClose?: () => void;
   expanded?: boolean;
+  variant?: "inline" | "sidebar";
 }
 
 export function CollaborativeSketchPanel({
   role,
   activeSketch,
   onSave,
+  sketchLocked = false,
   onClose,
   expanded: initialExpanded = false,
+  variant = "inline",
 }: CollaborativeSketchPanelProps) {
-  const [expanded, setExpanded] = useState(initialExpanded || !activeSketch);
+  const isSidebar = variant === "sidebar";
+  const canEdit = !sketchLocked || role === "admin";
+
+  const [previewOpen, setPreviewOpen] = useState(true);
+  const [settingsOpen, setSettingsOpen] = useState(!activeSketch && canEdit);
+  const [expanded, setExpanded] = useState(
+    isSidebar ? true : initialExpanded || !activeSketch
+  );
   const [type, setType] = useState(activeSketch?.data.type ?? "Shkaf");
   const [length, setLength] = useState(activeSketch?.data.length ?? 200);
   const [width, setWidth] = useState(activeSketch?.data.width ?? 60);
@@ -33,75 +46,70 @@ export function CollaborativeSketchPanel({
   const [material, setMaterial] = useState(activeSketch?.data.material ?? "MDF 18mm");
   const [saving, setSaving] = useState(false);
 
-  if (!activeSketch && !expanded) {
-    return (
-      <div className="px-4 py-2 border-b border-[#ebe6df] bg-white">
-        <button
-          type="button"
-          onClick={() => setExpanded(true)}
-          className="text-xs text-[#c97b3f] font-medium hover:underline"
-        >
-          + Umumiy eskiz yaratish / tahrirlash
-        </button>
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (!activeSketch?.data) return;
+    setType(activeSketch.data.type);
+    setLength(activeSketch.data.length);
+    setWidth(activeSketch.data.width);
+    setHeight(activeSketch.data.height);
+    setMaterial(activeSketch.data.material);
+  }, [activeSketch?.version, activeSketch?.updatedAt]);
 
   const handleSave = async () => {
+    if (!canEdit) return;
     setSaving(true);
     try {
       await onSave({ type, length, width, height, material });
-      setExpanded(false);
+      if (!isSidebar) setExpanded(false);
+      setPreviewOpen(true);
+      setSettingsOpen(false);
       onClose?.();
     } finally {
       setSaving(false);
     }
   };
 
-  return (
-    <div className="border-b border-[#ebe6df] bg-white">
-      <div className="px-4 py-2 flex items-center justify-between">
-        <div>
-          <p className="text-xs font-semibold text-[#3d3229]">Umumiy eskiz (har ikkala tomondan)</p>
-          {activeSketch && (
-            <p className="text-[10px] text-[#6b5f52]">
-              v{activeSketch.version} · {activeSketch.updatedBy === "customer" ? "Mijoz" : "Sotuvchi"}{" "}
-              tahrirlagan
-            </p>
-          )}
-        </div>
-        <button
-          type="button"
-          onClick={() => setExpanded((e) => !e)}
-          className="text-xs text-[#c97b3f] hover:underline"
-        >
-          {expanded ? "Yig'ish" : "Tahrirlash"}
-        </button>
-      </div>
+  const summary = formatSketchSummary({ type, length, width, height, material });
+  const versionBadge = activeSketch ? `v${activeSketch.version}` : undefined;
+  const editorLabel = activeSketch
+    ? activeSketch.updatedBy === "customer"
+      ? "Mijoz"
+      : "Sotuvchi"
+    : null;
 
-      {activeSketch && !expanded && (
-        <div className="px-4 pb-3 pointer-events-none opacity-90 max-h-[200px] overflow-hidden">
-          <SketchPreview
-            length={activeSketch.data.length}
-            width={activeSketch.data.width}
-            height={activeSketch.data.height}
-            type={activeSketch.data.type}
-            material={activeSketch.data.material}
-          />
-        </div>
-      )}
+  const lockNotice =
+    sketchLocked && role === "customer" ? (
+      <p className="mb-3 flex items-center gap-2 rounded-[12px] bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+        <Lock size={14} className="shrink-0" />
+        Kelishuv tasdiqlangan — eskizni faqat sotuvchi o&apos;zgartiradi
+      </p>
+    ) : null;
 
-      {expanded && (
-        <div className="px-4 pb-4 grid sm:grid-cols-2 gap-3 max-h-[55vh] overflow-y-auto">
-          <div className="space-y-2">
-            <select className="input-field py-2 text-sm" value={type} onChange={(e) => setType(e.target.value)}>
+  const settingsForm = (
+    <div className="space-y-3">
+      {lockNotice}
+      {!canEdit ? null : (
+        <>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-[#6b5f52]">Mahsulot turi</label>
+            <select
+              className="input-field py-2 text-sm"
+              value={type}
+              onChange={(e) => setType(e.target.value)}
+              disabled={!canEdit}
+            >
               {TYPES.map((t) => (
                 <option key={t}>{t}</option>
               ))}
             </select>
-            <DimensionInput id={`sk-${role}-l`} label="Uzunlik" value={length} onChange={setLength} />
-            <DimensionInput id={`sk-${role}-w`} label="Chuqurlik" value={width} onChange={setWidth} />
-            <DimensionInput id={`sk-${role}-h`} label="Balandlik" value={height} onChange={setHeight} />
+          </div>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <DimensionInput id={`sk-${role}-l`} label="Uzunlik (sm)" value={length} onChange={setLength} />
+            <DimensionInput id={`sk-${role}-w`} label="Chuqurlik (sm)" value={width} onChange={setWidth} />
+            <DimensionInput id={`sk-${role}-h`} label="Balandlik (sm)" value={height} onChange={setHeight} />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-[#6b5f52]">Material</label>
             <select
               className="input-field py-2 text-sm"
               value={material}
@@ -111,21 +119,94 @@ export function CollaborativeSketchPanel({
                 <option key={m}>{m}</option>
               ))}
             </select>
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={saving}
-              className="btn-accent w-full text-sm py-2"
-            >
-              {saving ? "Saqlanmoqda..." : "Eskizni saqlash va chatga yuborish"}
-            </button>
-            <p className="text-[10px] text-[#6b5f52]">{formatSketchSummary({ type, length, width, height, material })}</p>
           </div>
-          <div className="hidden sm:block">
-            <SketchPreview length={length} width={width} height={height} type={type} material={material} />
-          </div>
-        </div>
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving}
+            className="btn-accent w-full py-2.5 text-sm"
+          >
+            {saving ? "Saqlanmoqda..." : activeSketch ? "Eskizni yangilash" : "Eskizni saqlash"}
+          </button>
+        </>
       )}
+      <p className="text-center text-[10px] text-[#6b5f52]">{summary}</p>
+    </div>
+  );
+
+  if (isSidebar) {
+    return (
+      <div className="flex h-auto shrink-0 flex-col bg-white dark:bg-[#2a221c] lg:h-full lg:min-h-0">
+        <ChatAccordion
+          title="Umumiy eskiz"
+          subtitle="Chatdagi joriy eskiz"
+          open={previewOpen}
+          onToggle={() => setPreviewOpen((o) => !o)}
+          badge={versionBadge}
+        >
+          {editorLabel && (
+            <p className="mb-2 text-[10px] font-medium text-[#c97b3f]">{editorLabel} tahrirlagan</p>
+          )}
+          <div className="rounded-[16px] border border-[#ebe6df] bg-[#faf8f5] p-2 dark:border-[#3d3229] dark:bg-[#1a1612]">
+            <SketchPreview
+              compact
+              length={length}
+              width={width}
+              height={height}
+              type={type}
+              material={material}
+            />
+          </div>
+        </ChatAccordion>
+
+        <ChatAccordion
+          title="Eskiz o'lchamlari"
+          subtitle={canEdit ? "O'lcham va material sozlamalari" : "Faqat ko'rish"}
+          open={settingsOpen}
+          onToggle={() => setSettingsOpen((o) => !o)}
+        >
+          {settingsForm}
+        </ChatAccordion>
+      </div>
+    );
+  }
+
+  if (!activeSketch && !expanded) {
+    return (
+      <div className="border-b border-[#ebe6df] bg-white px-4 py-2">
+        <button
+          type="button"
+          onClick={() => {
+            setExpanded(true);
+            setSettingsOpen(true);
+          }}
+          className="text-xs font-medium text-[#c97b3f] hover:underline"
+        >
+          + Umumiy eskiz yaratish
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="border-b border-[#ebe6df] bg-white">
+      <ChatAccordion
+        title="Umumiy eskiz"
+        subtitle="Har ikkala tomondan"
+        open={previewOpen}
+        onToggle={() => setPreviewOpen((o) => !o)}
+        badge={versionBadge}
+      >
+        <SketchPreview compact length={length} width={width} height={height} type={type} material={material} />
+      </ChatAccordion>
+      <ChatAccordion
+        title="Eskiz o'lchamlari"
+        subtitle={summary}
+        open={settingsOpen}
+        onToggle={() => setSettingsOpen((o) => !o)}
+      >
+        {settingsForm}
+      </ChatAccordion>
     </div>
   );
 }

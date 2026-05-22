@@ -1,6 +1,14 @@
-/** Admin (3000) → do'kon API (3001) orqali umumiy chat */
+/** Admin (3000) — mijoz (3001) bilan bir xil Express chat API */
 
-const API = "http://localhost:3001/api/chat";
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") || "http://127.0.0.1:4000";
+
+function getChatUrl() {
+  if (typeof window !== "undefined") {
+    return "/api/chat";
+  }
+  return `${API_BASE}/api/chat`;
+}
 
 export type ChatSender = "customer" | "admin";
 export type ChatOrderStatus = "kelishuv" | "mijoz_rozi" | "sotuvchi_rozi" | "buyurtma_boshlandi";
@@ -36,6 +44,8 @@ export interface ChatThreadState {
   adminAgreed: boolean;
   messages: ChatMessage[];
   activeSketch: ActiveSketch | null;
+  adminLastSeenAt?: string | null;
+  orderRound?: number;
 }
 
 export const CHAT_STATUS_LABELS: Record<ChatOrderStatus, string> = {
@@ -54,17 +64,23 @@ export function formatSketchSummary(s: SketchData) {
 }
 
 async function parse<T>(res: Response): Promise<T> {
-  if (!res.ok) throw new Error("Chat API");
-  return res.json();
+  const data = (await res.json().catch(() => ({}))) as T & { error?: string };
+  if (!res.ok) {
+    throw new Error(data.error || `Chat API (${res.status})`);
+  }
+  return data;
 }
 
 export async function fetchChatThread() {
-  const res = await fetch(API, { cache: "no-store" });
+  const res = await fetch(getChatUrl(), { cache: "no-store" });
   return parse<ChatThreadState>(res);
 }
 
-export async function sendChatMessage(sender: ChatSender, payload: { text?: string; sketch?: SketchData }) {
-  const res = await fetch(API, {
+export async function sendChatMessage(
+  sender: ChatSender,
+  payload: { text?: string; sketch?: SketchData; customerName?: string }
+) {
+  const res = await fetch(getChatUrl(), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ action: "message", sender, ...payload }),
@@ -73,7 +89,7 @@ export async function sendChatMessage(sender: ChatSender, payload: { text?: stri
 }
 
 export async function updateChatSketch(sender: ChatSender, sketch: SketchData) {
-  const res = await fetch(API, {
+  const res = await fetch(getChatUrl(), {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ action: "updateSketch", sender, sketch }),
@@ -82,10 +98,28 @@ export async function updateChatSketch(sender: ChatSender, sketch: SketchData) {
 }
 
 export async function agreeToStartWork(sender: ChatSender) {
-  const res = await fetch(API, {
+  const res = await fetch(getChatUrl(), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ action: "agree", sender }),
+  });
+  return parse<ChatThreadState>(res);
+}
+
+export async function sendAdminHeartbeat() {
+  const res = await fetch(getChatUrl(), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "heartbeat", sender: "admin" }),
+  });
+  return parse<ChatThreadState>(res);
+}
+
+export async function cancelChatAgreement() {
+  const res = await fetch(getChatUrl(), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "cancelAgreement", sender: "admin" }),
   });
   return parse<ChatThreadState>(res);
 }

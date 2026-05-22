@@ -5,14 +5,15 @@ const HERO_IMAGE = "/images/bg1.png";
 
 export function HomeEditorialHero() {
   return (
-    <section className="relative min-h-[100svh] flex flex-col justify-end overflow-hidden bg-[#1a1612]">
+    <section className="relative min-h-[70vh] max-h-[820px] flex flex-col justify-end overflow-hidden bg-[#1a1612]">
       <Image
         src={HERO_IMAGE}
         alt="Zamonaviy mebel interyeri"
         fill
         priority
+        quality={70}
         className="object-cover object-center opacity-55"
-        sizes="100vw"
+        sizes="(max-width: 1400px) 100vw, 1400px"
       />
       <div className="absolute inset-0 bg-gradient-to-b from-[#1a1612]/40 via-transparent to-[#1a1612]/90" />
 

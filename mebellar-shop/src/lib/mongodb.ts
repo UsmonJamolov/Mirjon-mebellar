@@ -25,7 +25,7 @@ export async function connectDB() {
   if (cached.conn) return cached.conn;
 
   if (!cached.promise) {
-    const dbName = process.env.MONGODB_DB_NAME || "mebellar";
+    const dbName = process.env.MONGODB_DB_NAME || "m-mebellar";
     cached.promise = mongoose.connect(getUri(), { dbName });
   }
 
@@ -34,5 +34,5 @@ export async function connectDB() {
 }
 
 export function getDbName(): string {
-  return process.env.MONGODB_DB_NAME || "mebellar";
+  return process.env.MONGODB_DB_NAME || "m-mebellar";
 }
