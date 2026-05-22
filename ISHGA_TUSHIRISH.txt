@@ -201,3 +201,60 @@ Ikkala loyihani ALohida terminalda ishga tushiring.
   Texnik vazifa (TZ): mebellar_webapp_TZ.txt
 
 ================================================================================
+  MONGODB (Compass — localhost:27017)
+================================================================================
+
+  Agar Compass "ECONNREFUSED" bersa — MongoDB xizmati to'xtagan.
+
+  TEZKOR YECHIM (admin huquqisiz):
+    Ikki marta bosing:  start-mongodb.bat
+    (MMebellar papkasida)
+
+  Compass ulanish:
+    mongodb://localhost:27017
+
+  Ma'lumotlar joyi:
+    MMebellar\data\mongodb
+
+  Eslatma: Eski bazalar "Program Files" ichida qolgan bo'lishi mumkin.
+  Yangi ishga tushirish alohida (bo'sh) baza yaratadi.
+
+  Windows xizmatini admin sifatida yoqish:
+    PowerShell (Administrator):
+      net start MongoDB
+
+  Agar yana "out of memory" bilan yiqilsa:
+    mongod-local.cfg da FTDC o'chirilgan — start-mongodb.bat dan foydalaning.
+
+  .env fayllar:
+    Admin:     MMebellar\.env.local
+    Do'kon:    mebellar-shop\.env.local
+    Namuna:    .env.example (har ikkala papkada)
+
+  Ulanish tekshiruvi (server ishlayotganda):
+    http://localhost:3001/api/health/db
+    http://localhost:3000/api/health/db
+
+  Chat hozircha JSON faylda (keyin MongoDB ga ko'chiriladi).
+
+================================================================================
+  CHAT SINXRON (mijoz + sotuvchi)
+================================================================================
+
+  Chat xabarlari saqlanadi: data/chat-store.json
+
+  Ikkala tomondan ishlashi uchun IKKALA server ishga tushgan bo'lishi kerak:
+    - Do'kon  :3001  (API va mijoz chat)
+    - Admin   :3000  (sotuvchi chat → 3001 API ga ulanadi)
+
+  Mijoz chat:  http://localhost:3001/chat
+  Sotuvchi:    http://localhost:3000/xabarlar
+
+  Imkoniyatlar:
+    - Barcha SMS saqlanadi
+    - Eskiz yuborish (mijoz va sotuvchi)
+    - Umumiy eskizni ikkala tomondan tahrirlash
+    - "Ishni boshlashga roziman" — ikkalasi rozi bo'lsa status:
+      "Buyurtma qabul qilindi — ish boshlandi"
+
+================================================================================

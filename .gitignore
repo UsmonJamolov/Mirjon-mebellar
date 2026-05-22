@@ -38,3 +38,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local runtime data (MongoDB, chat store)
+/data/mongodb/
+/data/chat-store.json

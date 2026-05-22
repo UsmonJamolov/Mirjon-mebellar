@@ -4,48 +4,59 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { SketchAttachPanel } from "@/components/chat/SketchAttachPanel";
 import { SketchMessageCard } from "@/components/chat/SketchMessageCard";
+import { ChatAgreementBar } from "@/components/chat/ChatAgreementBar";
+import { ChatStatusBar } from "@/components/chat/ChatStatusBar";
+import { CollaborativeSketchPanel } from "@/components/chat/CollaborativeSketchPanel";
 import { IconPaperclip, IconRuler, IconSend, SupportAvatar } from "@/components/ui/ChatIcons";
+import {
+  agreeToStartWork,
+  fetchChatThread,
+  sendChatMessage,
+  updateChatSketch,
+} from "@/lib/chat-client";
 import { consumePendingSketch } from "@/lib/sketch-storage";
+import type { ChatThreadState } from "@/lib/chat-types";
+import { formatMessageTime } from "@/lib/chat-types";
 import type { SketchData } from "@/lib/sketch-types";
 import { formatSketchSummary } from "@/lib/sketch-types";
 
-type ChatMsg = {
-  id: string;
-  sender: "admin" | "customer";
-  text?: string;
-  sketch?: SketchData;
-  time: string;
-};
-
-const initialMessages: ChatMsg[] = [
-  {
-    id: "1",
-    sender: "admin",
-    text: "Assalomu alaykum! Mebellarga xush kelibsiz. Qanday yordam bera olaman?",
-    time: "10:00",
-  },
-];
-
-function nowTime() {
-  return new Date().toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" });
-}
-
-let msgId = 10;
+const ROLE = "customer" as const;
 
 export function ChatPageContent() {
   const searchParams = useSearchParams();
-  const [messages, setMessages] = useState(initialMessages);
+  const [thread, setThread] = useState<ChatThreadState | null>(null);
   const [input, setInput] = useState("");
   const [draftSketch, setDraftSketch] = useState<SketchData | null>(null);
   const [attachOpen, setAttachOpen] = useState(false);
   const [attachMenuOpen, setAttachMenuOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
   const attachRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  const load = useCallback(async () => {
+    try {
+      const data = await fetchChatThread();
+      setThread(data);
+    } catch {
+      /* retry on poll */
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+    const id = setInterval(load, 2500);
+    return () => clearInterval(id);
+  }, [load]);
 
   useEffect(() => {
     if (searchParams.get("eskiz") !== "1") return;
     const pending = consumePendingSketch();
     if (pending) setDraftSketch(pending);
   }, [searchParams]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [thread?.messages.length]);
 
   useEffect(() => {
     const close = (e: MouseEvent) => {
@@ -57,51 +68,48 @@ export function ChatPageContent() {
     return () => document.removeEventListener("mousedown", close);
   }, []);
 
-  const pushAdminReply = useCallback((hasSketch: boolean) => {
-    setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: String(++msgId),
-          sender: "admin",
-          text: hasSketch
-            ? "Eskizingiz qabul qilindi! Mutaxassis tez orada ko'rib chiqadi."
-            : "Xabaringiz qabul qilindi. Tez orada javob beramiz!",
-          time: nowTime(),
-        },
-      ]);
-    }, 1200);
-  }, []);
-
-  const send = () => {
+  const send = async () => {
     const text = input.trim();
     if (!text && !draftSketch) return;
-
-    const batch: ChatMsg[] = [];
-
-    if (draftSketch) {
-      batch.push({
-        id: String(++msgId),
-        sender: "customer",
-        sketch: draftSketch,
-        time: nowTime(),
-      });
+    setLoading(true);
+    try {
+      const state = await sendChatMessage(ROLE, { text: text || undefined, sketch: draftSketch ?? undefined });
+      setThread(state);
+      setInput("");
+      setDraftSketch(null);
+      setAttachOpen(false);
+    } finally {
+      setLoading(false);
     }
-    if (text) {
-      batch.push({
-        id: String(++msgId),
-        sender: "customer",
-        text,
-        time: nowTime(),
-      });
-    }
-
-    setMessages((prev) => [...prev, ...batch]);
-    setInput("");
-    setDraftSketch(null);
-    setAttachOpen(false);
-    pushAdminReply(!!draftSketch);
   };
+
+  const handleSketchSave = async (sketch: SketchData) => {
+    setLoading(true);
+    try {
+      const state = await updateChatSketch(ROLE, sketch);
+      setThread(state);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAgree = async () => {
+    setLoading(true);
+    try {
+      const state = await agreeToStartWork(ROLE);
+      setThread(state);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!thread) {
+    return (
+      <main className="max-w-3xl mx-auto px-4 py-12 text-center text-sm text-gray-500">
+        Chat yuklanmoqda...
+      </main>
+    );
+  }
 
   return (
     <main className="max-w-3xl mx-auto px-4 sm:px-6 flex flex-col h-[calc(100vh-8rem)] md:h-[calc(100vh-12rem)] py-4">
@@ -114,8 +122,20 @@ export function ChatPageContent() {
           </div>
         </div>
 
+        <ChatStatusBar
+          status={thread.status}
+          customerAgreed={thread.customerAgreed}
+          adminAgreed={thread.adminAgreed}
+        />
+
+        <CollaborativeSketchPanel
+          role={ROLE}
+          activeSketch={thread.activeSketch}
+          onSave={handleSketchSave}
+        />
+
         <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
-          {messages.map((m) => (
+          {thread.messages.map((m) => (
             <div
               key={m.id}
               className={`flex ${m.sender === "customer" ? "justify-end" : "justify-start"}`}
@@ -136,12 +156,15 @@ export function ChatPageContent() {
                     m.sender === "customer" ? "text-white/80" : "text-gray-400"
                   }`}
                 >
-                  {m.time}
+                  {formatMessageTime(m.createdAt)}
                 </p>
               </div>
             </div>
           ))}
+          <div ref={bottomRef} />
         </div>
+
+        <ChatAgreementBar role={ROLE} thread={thread} onAgree={handleAgree} loading={loading} />
 
         <div className="relative border-t bg-white">
           {draftSketch && (
@@ -156,7 +179,7 @@ export function ChatPageContent() {
                 type="button"
                 onClick={() => setDraftSketch(null)}
                 className="shrink-0 text-gray-400 hover:text-[#3d3229] text-lg px-1"
-                aria-label="Eskizni olib tashlash"
+                aria-label="Olib tashlash"
               >
                 ×
               </button>
@@ -186,7 +209,6 @@ export function ChatPageContent() {
                 }}
                 className="btn-icon h-11 w-11 rounded-[14px] border border-gray-200 text-gray-500 hover:bg-gray-50"
                 aria-label="Biriktirish"
-                aria-expanded={attachMenuOpen}
               >
                 <IconPaperclip size={20} />
               </button>
@@ -210,15 +232,16 @@ export function ChatPageContent() {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && send()}
+              onKeyDown={(e) => e.key === "Enter" && !loading && send()}
               placeholder="Xabar yozing..."
               className="input-field flex-1 py-2.5"
+              disabled={loading}
             />
             <button
               type="button"
               onClick={send}
-              disabled={!input.trim() && !draftSketch}
-              className="btn-icon-accent disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={loading || (!input.trim() && !draftSketch)}
+              className="btn-icon-accent disabled:opacity-50"
               aria-label="Yuborish"
             >
               <IconSend size={20} />
@@ -227,7 +250,7 @@ export function ChatPageContent() {
         </div>
       </div>
       <p className="text-xs text-gray-400 text-center mt-3">
-        Socket.io realtime chat productionda ulanadi
+        Xabarlar saqlanadi · Admin bilan sinxron (har 2.5s)
       </p>
     </main>
   );

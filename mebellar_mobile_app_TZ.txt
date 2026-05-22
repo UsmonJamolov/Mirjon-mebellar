@@ -1,0 +1,647 @@
+
+MEBELLAR MOBILE APPLICATION
+TEXNIK TOPSHIRIQ (TZ)
+React Native · iOS (Xcode) · Android
+
+Versiya: 1.0
+Asos: mebellar_webapp_TZ.txt + mebellar-shop (web)
+Sana: 2026
+
+====================================================
+0. HUJJAT MAQSADI
+====================================================
+
+Ushbu TZ mebellar-shop veb-ilovasining mobil ekvivalentini
+React Native da qurish uchun to‘liq texnik talablarni belgilaydi.
+
+Mobil ilova:
+- Mijoz (Customer) platformasi — mebellar-shop bilan bir xil funksional
+- Bir xil backend API, MongoDB, Socket.io, to‘lov tizimlari
+- O‘zbek tilida, zamonaviy UI/UX
+
+Admin CRM mobil ilovada MAJBURIY EMAS (1-bosqich).
+Admin ishlari web panel (MMebellar, port 3000) orqali davom etadi.
+Kelajakda 2-bosqichda Admin/Manager mobil ilova qo‘shilishi mumkin.
+
+====================================================
+1. LOYIHA HAQIDA
+====================================================
+
+Loyiha nomi:
+- Mebellar (Mobile)
+
+Loyiha turi:
+- Native-like cross-platform mobile app
+- iOS (Xcode orqali build) + Android (qo‘shimcha)
+
+Asosiy veb manba:
+- mebellar-shop (Next.js, port 3001) — UI/UX va biznes-logika namunasi
+
+Yo‘nalish (mebellar-shop bilan bir xil):
+- Mebel e-commerce
+- Individual o‘lcham / eskiz yaratish
+- Sotuvchi bilan realtime chat
+- Buyurtma va to‘lov
+- Buyurtmalarni kuzatish
+
+Platforma (mobil):
+- iOS 15+ (asosiy — Xcode)
+- Android 10+ (React Native bir koddan)
+
+Til:
+- O‘zbek tili (default)
+- Kelajakda: RU / EN (i18n tayyor)
+
+====================================================
+2. LOYIHA MAQSADI
+====================================================
+
+Foydalanuvchi mobil ilova orqali:
+- mebellarni ko‘rish va qidirish,
+- sevimlilarga qo‘shish,
+- savatchaga qo‘shish va buyurtma berish,
+- Payme / Click / Uzum orqali to‘lash,
+- individual o‘lchamlar yuborish va 2D eskiz yaratish,
+- eskizni chat orqali sotuvchiga yuborish,
+- sotuvchi bilan chatda eskizni birgalikda tahrirlash,
+- ikkala tomondan kelishgach buyurtma statusiga o‘tish,
+- buyurtmalar tarixini kuzatish,
+- profil va bildirishnomalarni boshqarish.
+
+Maqsad: mebellar-shop veb tajribasini mobilga to‘liq ko‘chirish,
+vebdan qulayroq (push, kamera, offline cache).
+
+====================================================
+3. ARXITEKTURA VA ALOQADOR LOYIHALAR
+====================================================
+
+┌─────────────────────────────────────────────────────────┐
+│  MEBELLAR MOBILE (React Native)                         │
+│  iOS / Android                                          │
+└──────────────────────────┬──────────────────────────────┘
+                           │ HTTPS / WSS
+                           ▼
+┌─────────────────────────────────────────────────────────┐
+│  BACKEND API (Node.js) — alohida REST + Socket.io       │
+│  (mebellar-shop Next.js API route’lari migratsiya)      │
+└──────────────────────────┬──────────────────────────────┘
+                           │
+          ┌────────────────┼────────────────┐
+          ▼                ▼                ▼
+     MongoDB          AWS S3 /           Payme / Click /
+     (mebellar)       Firebase           Uzum Pay
+                      Storage
+
+Veb loyihalar (paralleld):
+- mebellar-shop  → mijoz UI namunasi + API prototip
+- MMebellar      → Admin CRM (web only, 1-bosqich)
+
+Mobil ilova TO‘G‘RIDAN-TO‘G‘RI MongoDB ga ulanmaydi.
+Faqat backend API orqali ishlaydi (.env: API_URL).
+
+====================================================
+4. TEXNOLOGIYALAR (MOBIL)
+====================================================
+
+4.1 Asosiy stack
+- React Native 0.76+ (yoki eng so‘nggi barqaror)
+- TypeScript
+- React Navigation 6+ (Stack + Bottom Tabs)
+- Xcode 15+ (iOS build, Simulator, Archive)
+- CocoaPods (iOS dependencies)
+- Gradle (Android build)
+
+4.2 Tavsiya etilgan init
+- React Native CLI (to‘liq native control, Xcode uchun)
+  YOKI
+- Expo (managed) + expo prebuild → Xcode loyiha
+  TZ da: React Native CLI tavsiya (Push, deep link, to‘lov SDK uchun)
+
+4.3 State va ma’lumot
+- TanStack Query (React Query) — server state, cache
+- Zustand yoki Context — savatcha, auth, locale
+- AsyncStorage — token, savatcha backup, onboarding flag
+- MMKV (ixtiyoriy, tezroq storage)
+
+4.4 UI
+- React Native Paper yoki custom components (mebellar-shop dizayniga mos)
+- react-native-svg — eskiz preview chizmalari
+- react-native-fast-image — mahsulot rasmlari
+- react-native-reanimated — animatsiyalar
+- Poppins font (mebellar-shop bilan bir xil)
+
+4.5 Network
+- Axios yoki fetch wrapper
+- Socket.io-client — chat realtime
+- NetInfo — offline holat
+
+4.6 Xavfsizlik
+- react-native-keychain — JWT token saqlash (iOS Keychain)
+- SSL pinning (production, ixtiyoriy 2-bosqich)
+
+4.7 Native modullar (iOS)
+- Push: Firebase Cloud Messaging + APNs
+- Rasm: react-native-image-picker (chat, profil)
+- PDF/Share: eskiz export
+- Deep linking: mebellar://product/:id
+
+====================================================
+5. BACKEND VA API (mebellar-shop asosida)
+====================================================
+
+Mobil ilova quyidagi API guruhlariga tayanadi.
+Hozirgi mebellar-shop ichidagi route’lar alohida Node/Express
+yoki Next.js API Routes dan REST ga ajratiladi.
+
+5.1 Base URL (.env)
+- DEV:  http://localhost:3001/api  (yoki alohida API server :4000)
+- PROD: https://api.mebellar.uz
+
+5.2 Auth
+- POST   /auth/register      { phone, name, password? }
+- POST   /auth/login         { phone, otp | password }
+- POST   /auth/refresh
+- POST   /auth/logout
+- GET    /auth/me
+
+Auth: JWT (Access + Refresh)
+Header: Authorization: Bearer <token>
+
+5.3 Mahsulotlar (mebellar-shop: katalog, mahsulot)
+- GET    /products              ?category=&search=&page=
+- GET    /products/:id
+- GET    /categories
+- GET    /products/popular
+- GET    /products/new
+- GET    /products/recommended
+
+5.4 Savatcha va buyurtma
+- GET    /cart
+- POST   /cart/items            { productId, quantity }
+- PATCH  /cart/items/:id        { quantity }
+- DELETE /cart/items/:id
+- POST   /orders                { address, phone, name, paymentMethod }
+- GET    /orders
+- GET    /orders/:id
+- POST   /orders/:id/pay          { provider: payme|click|uzum }
+
+5.5 Sevimlilar
+- GET    /favorites
+- POST   /favorites/:productId
+- DELETE /favorites/:productId
+
+5.6 Eskiz (mebellar-shop: /eskiz)
+- POST   /sketches              { type, length, width, height, material }
+- GET    /sketches/:id
+- PATCH  /sketches/:id          tahrirlash
+- GET    /sketches/:id/export   ?format=png|pdf
+
+5.7 Chat (mebellar-shop: /chat + Socket.io)
+REST:
+- GET    /chat/thread
+- POST   /chat/messages         { text?, sketch? }
+- PATCH  /chat/sketch           { sketch }
+- POST   /chat/agree            { role: customer }
+
+Socket.io events:
+- connect (auth token bilan)
+- message:new
+- sketch:updated
+- order:status_changed
+- typing:start / typing:stop
+
+5.8 Profil
+- GET    /profile
+- PATCH  /profile               { name, email, avatar }
+- POST   /profile/avatar
+
+5.9 Health
+- GET    /health/db
+
+5.10 MongoDB kolleksiyalar (backend)
+- users
+- products
+- categories
+- orders
+- order_items
+- favorites
+- chat_threads
+- chat_messages
+- sketches
+- payments
+
+(.env: MONGODB_URI, MONGODB_DB_NAME=mebellar)
+
+====================================================
+6. DIZAYN SISTEMASI (MOBIL)
+====================================================
+
+mebellar-shop amalda qo‘llangan palitra (mobil uchun asos):
+
+Ranglar:
+- Primary text:     #3D3229
+- Accent:           #F4A261
+- Accent hover:     #E88B4A
+- Background:       #FAF8F5
+- Surface (card):   #FFFFFF
+- Border:           #EBE6DF
+- Footer dark:      #3D3229
+- Success:          #22C55E
+- Error:            #EF4444
+
+Typography:
+- Font family: Poppins
+- H1: 28–32sp, Bold
+- H2: 22–24sp, SemiBold
+- Body: 14–16sp, Regular
+- Caption: 11–12sp
+
+Komponentlar (mebellar-shop bilan mos):
+- Button radius: 14px
+- Card radius: 20px
+- Input radius: 14px
+- Shadow: yengil (iOS shadowColor / elevation Android)
+- Bottom Tab: 5 ta icon (Home, Katalog, Eskiz, Chat, Profil)
+
+Dark mode:
+- 2-bosqich (TZ da ixtiyoriy, web TZ da profilda bor)
+
+====================================================
+7. NAVIGATSIYA STRUKTURASI
+====================================================
+
+7.1 Root
+- AuthStack (login bo‘lmasa)
+- MainTabs (login bo‘lsa)
+
+7.2 Bottom Tabs (mebellar-shop MobileBottomNav ekvivalenti)
+| Tab        | Icon        | Veb sahifa        |
+|------------|-------------|-------------------|
+| Bosh sahifa| Home        | /                 |
+| Katalog    | Grid        | /katalog          |
+| Eskiz      | PenTool     | /eskiz            |
+| Chat       | Message     | /chat             |
+| Profil     | User        | /profil           |
+
+Savatcha: header’dagi icon (badge — item count), alohida Stack screen.
+
+7.3 Stack ekranlar (har tab ichida)
+- ProductDetail      /mahsulot/:id
+- Cart               /savatcha
+- Checkout           /checkout
+- OrdersList         /buyurtmalar
+- OrderDetail        /buyurtmalar/:id
+- Favorites          /sevimlilar
+- SketchEditor       /eskiz (to‘liq ekran)
+- ChatThread         /chat (tab ichida asosiy)
+- ProfileEdit
+- PaymentWebView     to‘lov provider
+
+====================================================
+8. EKRANLAR — BATAFSIL (mebellar-shop asosida)
+====================================================
+
+8.1 Splash & Onboarding
+- Splash: logo + brand rang
+- Onboarding (1-bosqich ixtiyoriy): 3 slayd — katalog, eskiz, chat
+- Token tekshiruv → Main yoki Auth
+
+8.2 Auth (Login / Register)
+- Telefon raqam (+998)
+- SMS OTP (backend)
+- Ism (register)
+- "Kirish" / "Ro‘yxatdan o‘tish"
+- Keychain’da token
+
+8.3 BOSH SAHIFA (mebellar-shop: Home — editorial hero)
+- Hero: katta tipografiya, fon rasm (bg1.png API dan)
+- Studio strip qisqartirilgan
+- "Arxiv" — mahsulotlar ro‘yxati (horizontal scroll yoki vertical list)
+- Kategoriyalar: horizontal rail
+- Tanlangan mahsulotlar: 2 ustunli grid
+- Pull-to-refresh
+- Skeleton loading
+
+8.4 KATALOG (mebellar-shop: /katalog)
+- Qidiruv (sticky)
+- Kategoriya pills (horizontal)
+- Filter bottom sheet: narx, material, tartib
+- Mahsulot grid 2 ustun
+- ProductCard: rasm, nom, reyting, narx, like
+- Pagination yoki infinite scroll
+
+8.5 MAHSULOT DETALI (mebellar-shop: /mahsulot/[id])
+- Image carousel (swipe)
+- Nomi, reyting, narx
+- Material, o‘lchamlar (sm)
+- Tavsif (expandable)
+- Tugmalar:
+  - Savatchaga qo‘shish (quantity selector)
+  - Sevimlilar
+  - Ulashish (Share API)
+  - WhatsApp (Linking.openURL)
+- Related products (ixtiyoriy)
+
+8.6 SAVATCHA (mebellar-shop: /savatcha)
+- Mahsulotlar ro‘yxati
+- +/- quantity
+- O‘chirish
+- Jami summa
+- "Buyurtma berish" → Checkout
+- Bo‘sh savatcha holati
+
+8.7 CHECKOUT (mebellar-shop: /checkout)
+- Form: Ism, Telefon, Manzil (multiline)
+- Buyurtma xulosasi
+- To‘lov usuli: Payme | Click | Uzum (radio)
+- "To‘lov qilish" → WebView yoki deep link provider SDK
+- Muvaffaqiyat / xato ekrani
+
+8.8 BUYURTMALAR (mebellar-shop: /buyurtmalar)
+- Ro‘yxat: id, sana, summa, status badge
+- Status ranglari:
+  - Yangi
+  - Jarayonda
+  - Tugallangan
+- Detail: mahsulotlar, manzil, to‘lov holati
+
+8.9 SEVIMLILAR (mebellar-shop: /sevimlilar)
+- Grid ProductCard
+- Bo‘sh holat
+
+8.10 ESKIZ (mebellar-shop: /eskiz)
+- Form:
+  - Mahsulot turi (picker): Shkaf, Oshxona, Stol, Divan
+  - Uzunlik, Kenglik, Balandlik (sm) — raqam input
+  - Material (picker)
+- Preview: SVG 2D (3 ko‘rinish — mebellar-shop SketchPreview logikasi)
+- Tugmalar:
+  - "Eskiz yaratish"
+  - "Chatga yuborish" (navigate Chat + sketch payload)
+  - Export PNG / PDF (share sheet)
+- Validation: 30–500 sm
+
+8.11 CHAT (mebellar-shop: /chat)
+- Header: support nomi, online status
+- Status bar: kelishuv / buyurtma boshlandi
+- Umumiy eskiz panel (collapsible) — tahrirlash
+- Xabarlar ro‘yxati (FlatList, inverted)
+  - Matn bubble
+  - Eskiz bubble (mini preview)
+  - Vaqt
+- Input: matn, biriktirish (eskiz, rasm), yuborish
+- "Ishni boshlashga roziman" tugmasi
+- Socket.io realtime
+- Offline: queue + retry (2-bosqich)
+
+8.12 PROFIL (mebellar-shop: /profil)
+- Avatar (tap → gallery)
+- Ism, telefon, email
+- Menu:
+  - Buyurtmalarim
+  - Sevimlilar
+  - Eskiz yaratish
+  - Chat
+  - Sozlamalar
+  - Chiqish
+- Versiya raqami
+
+8.13 Sozlamalar
+- Til (kelajak)
+- Bildirishnomalar toggle
+- Qo‘llab-quvvatlash (chat link)
+
+====================================================
+9. MEBELLAR-SHOP BILAN MOSLIK JADVALI
+====================================================
+
+| Veb (mebellar-shop)     | Mobil ekran              | API                    |
+|-------------------------|--------------------------|------------------------|
+| /                       | Tab: Home                | products, categories   |
+| /katalog                | Tab: Katalog + Filter    | products               |
+| /mahsulot/[id]          | ProductDetail            | products/:id           |
+| /savatcha               | Cart                     | cart                   |
+| /checkout               | Checkout                 | orders, payments       |
+| /buyurtmalar            | OrdersList               | orders                 |
+| /buyurtmalar/[id]       | OrderDetail              | orders/:id             |
+| /sevimlilar             | Favorites                | favorites              |
+| /eskiz                  | Tab: Eskiz               | sketches               |
+| /chat                   | Tab: Chat                | chat + socket          |
+| /profil                 | Tab: Profil              | profile                |
+| ShopHeader search       | Home/Katalog search      | products?search=       |
+| CartContext             | Zustand cart store       | cart API sync          |
+| data/chat-store.json    | MongoDB chat_messages    | socket + REST          |
+| localStorage cart/likes | API + AsyncStorage       | favorites, cart        |
+
+====================================================
+10. REALTIME CHAT (Socket.io)
+====================================================
+
+mebellar-shop TZ va amalga oshirilgan funksiyalar:
+
+10.1 Xabar turlari
+- text
+- sketch (SketchData JSON)
+- image (URL S3 dan)
+- system (status o‘zgarishi)
+
+10.2 Eskiz hamkorligi
+- activeSketch — thread darajasida
+- Har ikki tomondan PATCH
+- Versiya counter
+- Chatga avtomatik system message
+
+10.3 Kelishuv oqimi
+- customerAgreed / adminAgreed
+- status: kelishuv → mijoz_rozi → sotuvchi_rozi → buyurtma_boshlandi
+- Ikkala rozi → order yaratish / status yangilash (backend)
+
+10.4 Mobil UX
+- Typing indicator
+- Read receipts (2-bosqich)
+- Push yangi xabar kelganda
+
+====================================================
+11. TO‘LOV INTEGRATSIYASI
+====================================================
+
+mebellar_webapp_TZ.txt bo‘yicha:
+
+- Payme
+- Click
+- Uzum Pay
+
+Mobil:
+- Provider checkout URL backend dan
+- WebView yoki native SDK (provider hujjatiga qarab)
+- Callback deep link: mebellar://payment/success|fail
+- Order status yangilash webhook (backend)
+
+====================================================
+12. iOS / XCODE TALABLARI
+====================================================
+
+12.1 Loyiha sozlamalari
+- Bundle ID: uz.mebellar.app (yoki com.mebellar.shop)
+- Deployment Target: iOS 15.0+
+- Display Name: Mebellar
+- Supported orientations: Portrait (asosiy), Landscape (ixtiyoriy)
+
+12.2 Xcode workflow
+1. git clone → npm install
+2. cd ios && pod install
+3. Mebellar.xcworkspace ochish
+4. Simulator / haqiqiy iPhone
+5. Archive → TestFlight → App Store
+
+12.3 iOS permissions (Info.plist)
+- NSCameraUsageDescription — profil, chat rasm
+- NSPhotoLibraryUsageDescription — galereya
+- NSMicrophoneUsageDescription — ovozli xabar (2-bosqich)
+- UIBackgroundModes — remote-notification
+
+12.4 App Icons & Launch Screen
+- 1024x1024 App Store icon
+- LaunchScreen.storyboard — logo + #FAF8F5 fon
+
+====================================================
+13. ANDROID (QO‘SHIMCHA)
+====================================================
+
+React Native bir koddan Android build:
+- applicationId: uz.mebellar.app
+- Min SDK 24
+- Google Play billing / FCM
+- Material elevation mos dizayn
+
+====================================================
+14. LOYIHA PAPKA STRUKTURASI (TAVSIYA)
+====================================================
+
+mebellar-mobile/
+├── .env.example
+├── .env.development
+├── App.tsx
+├── index.js
+├── package.json
+├── tsconfig.json
+├── ios/                    # Xcode loyiha
+│   ├── Mebellar.xcworkspace
+│   └── Podfile
+├── android/
+└── src/
+    ├── api/                # axios, endpoints
+    ├── components/         # Button, Card, ProductCard...
+    ├── screens/            # Home, Catalog, ProductDetail...
+    ├── navigation/         # RootNavigator, TabNavigator
+    ├── hooks/              # useAuth, useCart, useChat
+    ├── store/              # zustand slices
+    ├── theme/              # colors, typography
+    ├── types/              # Product, Order, SketchData...
+    ├── utils/
+    └── assets/             # fonts, images
+
+====================================================
+15. .ENV (MOBIL)
+====================================================
+
+API_URL=http://localhost:3001/api
+SOCKET_URL=http://localhost:3001
+MONGODB_URI=              # faqat backend da, mobil da YO‘Q
+APP_ENV=development
+
+Production:
+API_URL=https://api.mebellar.uz/api
+SOCKET_URL=https://api.mebellar.uz
+
+====================================================
+16. XAVFSIZLIK
+====================================================
+
+- JWT Authentication (mebellar_webapp_TZ)
+- HTTPS only (production)
+- Token Keychain / Keystore
+- API rate limiting (backend)
+- Input validation
+- Admin alohida — mobil mijoz roli: customer only
+- Rasm upload: type/size cheklov
+
+====================================================
+17. PERFORMANCE
+====================================================
+
+- FlatList optimization (windowSize, memo)
+- Image caching (FastImage)
+- React Query staleTime
+- Lazy screen loading
+- Bundle size monitoring
+- Hermes engine yoqiq
+
+====================================================
+18. TESTLASH
+====================================================
+
+- Jest — unit (utils, hooks)
+- Detox yoki Maestro — E2E (ixtiyoriy)
+- iOS Simulator — barcha ekranlar
+- Haqiqiy qurilma — chat, to‘lov, kamera
+- TestFlight — beta
+
+====================================================
+19. ISH BOSQICHLARI (ROADMAP)
+====================================================
+
+BOSQICH 1 — Asos (4–6 hafta)
+- RN loyiha, navigatsiya, theme
+- Auth, API client
+- Home, Katalog, ProductDetail
+- Savatcha, Checkout (mock to‘lov)
+- Profil, Buyurtmalar
+
+BOSQICH 2 — Eskiz va Chat (3–4 hafta)
+- Eskiz moduli (SVG preview)
+- Chat REST + Socket.io
+- Eskiz yuborish, hamkorlik, kelishuv
+
+BOSQICH 3 — To‘lov va Production (2–3 hafta)
+- Payme / Click / Uzum
+- Push notifications
+- iOS TestFlight, Android internal
+- Backend production deploy
+
+BOSQICH 4 — Admin mobil (ixtiyoriy, kelajak)
+- CRM qisqartirilgan mobil admin
+
+====================================================
+20. QABUL QILINISH MEZONLARI (ACCEPTANCE)
+====================================================
+
+- Barcha mebellar-shop mijoz funksiyalari mobilde mavjud
+- iOS Xcode orqali xatosiz build
+- O‘zbek tilida
+- Chat xabarlari saqlanadi (MongoDB backend)
+- Eskiz yuborish va tahrirlash ishlaydi
+- To‘lov kamida bitta provider ishlaydi (production)
+- API dokumentatsiyasi mavjud
+- App Store / Play Store ga yuklashga tayyor assetlar
+
+====================================================
+21. HUJJATLAR BILAN BOG‘LIQLIK
+====================================================
+
+- mebellar_webapp_TZ.txt      — umumiy platforma TZ
+- mebellar-shop/              — veb namuna, UI, API prototip
+- ISHGA_TUSHIRISH.txt          — dev server ishga tushirish
+- mebellar_mobile_app_TZ.txt  — ushbu hujjat (mobil TZ)
+
+====================================================
+22. XULOSA
+====================================================
+
+Mebellar mobil ilovasi mebellar-shop veb loyihasining to‘liq
+mobil ekvivalenti bo‘lib, React Native + Xcode (iOS) orqali
+yaratiladi. Barcha biznes-jarayonlar (katalog, savat, to‘lov,
+eskiz, chat, buyurtma) bir xil backend va MongoDB ustida
+birlashtiriladi. Admin CRM 1-bosqichda webda qoladi.
+
+====================================================

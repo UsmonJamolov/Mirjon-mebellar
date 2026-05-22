@@ -76,4 +76,19 @@
   .text-primary {
     color: #3d3229;
   }
+  .editorial-display {
+    font-feature-settings: "kern" 1, "liga" 1;
+  }
+  .editorial-tagline {
+    font-size: clamp(0.875rem, 1.5vw, 1.125rem);
+    line-height: 1.6;
+    letter-spacing: 0.02em;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
 }
