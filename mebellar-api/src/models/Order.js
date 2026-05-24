@@ -14,6 +14,8 @@ const orderSchema = new mongoose.Schema(
     customerPhone: String,
     customerAddress: String,
     items: [{ name: String, quantity: Number, productId: String, price: Number }],
+    source: { type: String, default: "manual" },
+    chatRound: { type: Number, default: null },
   },
   { timestamps: true }
 );

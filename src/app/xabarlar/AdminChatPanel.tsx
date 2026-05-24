@@ -193,7 +193,7 @@ export function AdminChatPanel({
       </div>
       )}
 
-      <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-3 bg-[#f5f5f5]">
+      <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide p-4 space-y-3 bg-[#f5f5f5]">
         {thread.messages.map((m) => (
           <div key={m.id} className={cn("flex", m.sender === "admin" ? "justify-end" : "justify-start")}>
             <div

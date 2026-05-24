@@ -27,14 +27,18 @@ export function DashboardLayout({
     <div className="min-h-screen bg-[#f5f5f5]">
       <Sidebar />
       <MobileDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
-      <div className="lg:pl-64 flex flex-col min-h-screen">
+      <div className="lg:pl-64 flex flex-col min-h-screen min-h-0">
         <Header
           onMenuClick={() => setDrawerOpen(true)}
           title={title}
           showBack={showBack}
           onBack={onBack}
         />
-        <main className={`flex-1 p-4 lg:p-8 ${hideMobileNav ? "" : "pb-20 lg:pb-8"}`}>
+        <main
+          className={`flex-1 min-h-0 p-4 lg:p-8 ${
+            hideMobileNav ? "overflow-hidden" : "pb-20 lg:pb-8"
+          }`}
+        >
           {children}
         </main>
         {!hideMobileNav && <MobileNav />}

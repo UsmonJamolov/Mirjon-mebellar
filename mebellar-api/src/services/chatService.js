@@ -1,5 +1,6 @@
 import { ChatThread } from "../models/ChatThread.js";
 import { defaultChat } from "../seed-data.js";
+import { createOrderFromChat } from "./orderService.js";
 
 function newId(prefix) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -121,6 +122,7 @@ export async function setAgreement(sender) {
       text: "✅ Ikkala tomondan kelishildi. Buyurtma qabul qilindi — eskiz sotuvchi nazoratida.",
       createdAt: new Date().toISOString(),
     });
+    await createOrderFromChat(toState(doc));
   } else {
     const who = sender === "customer" ? "Mijoz" : "Sotuvchi";
     doc.messages.push({
@@ -172,4 +174,65 @@ export async function startNewOrder() {
 
   await doc.save();
   return toState(doc);
+}
+
+function lastMessagePreview(messages) {
+  const last = messages?.[messages.length - 1];
+  return last?.text?.slice(0, 80) || "Chat";
+}
+
+export async function listThreads() {
+  const docs = await ChatThread.find().sort({ updatedAt: -1 });
+  return docs.map((doc) => {
+    const o = doc.toObject();
+    const last = o.messages?.[o.messages.length - 1];
+    return {
+      id: o.threadId,
+      customerName: o.customerName,
+      lastMessage: lastMessagePreview(o.messages),
+      time: last?.createdAt
+        ? new Date(last.createdAt).toLocaleTimeString("uz-UZ", {
+            hour: "2-digit",
+            minute: "2-digit",
+          })
+        : "hozir",
+      isLive: o.threadId === "main",
+      unread: 0,
+    };
+  });
+}
+
+export async function deleteThread(threadId) {
+  if (threadId === "main") {
+    throw new Error("Asosiy chatni o'chirib bo'lmaydi");
+  }
+  const r = await ChatThread.deleteOne({ threadId });
+  if (!r.deletedCount) throw new Error("Chat topilmadi");
+  return { ok: true };
+}
+
+export async function createThread(customerName) {
+  const name = String(customerName || "").trim() || "Mijoz";
+  const threadId = `t-${Date.now()}`;
+  const doc = await ChatThread.create({
+    threadId,
+    customerName: name,
+    status: "kelishuv",
+    messages: [
+      {
+        id: newId("msg"),
+        sender: "customer",
+        text: "Assalomu alaykum!",
+        createdAt: new Date().toISOString(),
+      },
+    ],
+  });
+  return {
+    id: doc.threadId,
+    customerName: doc.customerName,
+    lastMessage: "Assalomu alaykum!",
+    time: "hozir",
+    isLive: false,
+    unread: 0,
+  };
 }

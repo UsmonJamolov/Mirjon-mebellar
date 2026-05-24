@@ -43,6 +43,34 @@ chatRouter.post("/", async (req, res) => {
   }
 });
 
+chatRouter.get("/threads", async (_req, res) => {
+  try {
+    res.json(await chat.listThreads());
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: e.message || "Ro'yxat xatosi" });
+  }
+});
+
+chatRouter.post("/threads", async (req, res) => {
+  try {
+    const item = await chat.createThread(req.body.customerName);
+    res.status(201).json(item);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: e.message || "Yaratishda xato" });
+  }
+});
+
+chatRouter.delete("/threads/:id", async (req, res) => {
+  try {
+    res.json(await chat.deleteThread(req.params.id));
+  } catch (e) {
+    console.error(e);
+    res.status(400).json({ error: e.message || "O'chirishda xato" });
+  }
+});
+
 chatRouter.patch("/", async (req, res) => {
   try {
     const { action, sender, sketch } = req.body;

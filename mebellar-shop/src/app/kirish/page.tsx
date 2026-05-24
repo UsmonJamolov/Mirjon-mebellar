@@ -9,33 +9,49 @@ import { AuthShell } from "@/components/auth/AuthShell";
 import { AuthField } from "@/components/auth/AuthField";
 import { AuthSubmitButton } from "@/components/auth/AuthSubmitButton";
 import { AuthAlert } from "@/components/auth/AuthAlert";
-import { normalizePhone } from "@/lib/phone-auth";
+import { loginIdentifierFromPhone } from "@/lib/phone-auth";
+import { redirectAfterAuth } from "@/lib/auth-client";
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/profil";
   const urlError = searchParams.get("error");
+  const registered = searchParams.get("registered");
 
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [info, setInfo] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (urlError === "Configuration") {
       setError("Auth sozlamasi yangilandi. Qayta urinib ko'ring.");
       router.replace("/kirish");
+      return;
     }
-  }, [urlError, router]);
+    if (registered === "1") {
+      setInfo("Hisob yaratildi. Telefon va parolingiz bilan kiring.");
+      router.replace("/kirish");
+    }
+  }, [urlError, registered, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setInfo("");
     setLoading(true);
 
+    const loginId = loginIdentifierFromPhone(phone);
+    if (!loginId) {
+      setError("Telefon raqam noto'g'ri");
+      setLoading(false);
+      return;
+    }
+
     const res = await signIn("credentials", {
-      email: normalizePhone(phone),
+      email: loginId,
       password,
       redirect: false,
     });
@@ -47,8 +63,7 @@ function LoginForm() {
       return;
     }
 
-    router.push(callbackUrl);
-    router.refresh();
+    redirectAfterAuth(callbackUrl);
   };
 
   return (
@@ -69,7 +84,8 @@ function LoginForm() {
       }
     >
       <form onSubmit={handleSubmit} className="space-y-2.5 lg:space-y-4">
-        {error && <AuthAlert message={error} />}
+        {info && <AuthAlert message={info} variant="success" />}
+        {error && <AuthAlert message={error} variant="error" />}
 
         <AuthField
           id="login-phone"

@@ -16,3 +16,9 @@ export function phoneToLoginEmail(phone: string): string {
 export function isEmailLike(value: string): boolean {
   return value.includes("@");
 }
+
+/** NextAuth credentials.email — `+` form-urlencoded da buzilmasligi uchun ichki email */
+export function loginIdentifierFromPhone(raw: string): string {
+  const phone = normalizePhone(raw);
+  return phone ? phoneToLoginEmail(phone) : "";
+}

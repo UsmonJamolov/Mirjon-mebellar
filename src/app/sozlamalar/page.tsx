@@ -1,29 +1,56 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { PageTitle } from "@/components/ui/PageTitle";
+import { adminApi, type SettingsDto } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
-const tabs = [
-  "Umumiy",
-  "Profil",
-  "To'lov usullari",
-  "Bildirishnomalar",
-  "Xavfsizlik",
-];
+const tabs = ["Umumiy", "Profil", "To'lov usullari", "Bildirishnomalar", "Xavfsizlik"];
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState("Umumiy");
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<SettingsDto>({
     storeName: "Mebellar",
-    phone: "+998 71 200 00 00",
-    email: "info@mebellar.uz",
-    address: "Toshkent sh., Chilonzor tumani",
+    phone: "",
+    email: "",
+    address: "",
     currency: "UZS (so'm)",
     timezone: "Asia/Tashkent (UTC+5)",
+    logo: "",
+    materials: [],
   });
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState("");
+
+  useEffect(() => {
+    adminApi.getSettings().then(setForm).catch(() => {});
+  }, []);
+
+  const save = async () => {
+    setSaving(true);
+    setMsg("");
+    try {
+      const updated = await adminApi.saveSettings(form);
+      setForm(updated);
+      setMsg("Saqlandi!");
+    } catch {
+      setMsg("Saqlashda xato");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const onLogo = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setForm((f) => ({ ...f, logo: reader.result as string }));
+    };
+    reader.readAsDataURL(file);
+  };
 
   return (
     <DashboardLayout title="Sozlamalar">
@@ -37,9 +64,7 @@ export default function SettingsPage() {
             onClick={() => setActiveTab(tab)}
             className={cn(
               "whitespace-nowrap px-4 py-2 text-sm font-medium border-b-2 -mb-px transition",
-              activeTab === tab
-                ? "border-[#3b82f6] text-[#3b82f6]"
-                : "border-transparent text-gray-500 hover:text-gray-700"
+              activeTab === tab ? "border-[#3b82f6] text-[#3b82f6]" : "border-transparent text-gray-500"
             )}
           >
             {tab}
@@ -47,42 +72,25 @@ export default function SettingsPage() {
         ))}
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        <div className="card p-6 lg:col-span-2 space-y-4">
-          <h2 className="font-semibold">Umumiy ma&apos;lumotlar</h2>
-          <div>
-            <label className="text-sm font-medium mb-1 block">Do&apos;kon nomi</label>
-            <input
-              className="input-field"
-              value={form.storeName}
-              onChange={(e) => setForm({ ...form, storeName: e.target.value })}
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-1 block">Telefon</label>
-            <input
-              className="input-field"
-              value={form.phone}
-              onChange={(e) => setForm({ ...form, phone: e.target.value })}
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-1 block">Email</label>
-            <input
-              className="input-field"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-1 block">Manzil</label>
-            <input
-              className="input-field"
-              value={form.address}
-              onChange={(e) => setForm({ ...form, address: e.target.value })}
-            />
-          </div>
-          <div className="grid sm:grid-cols-2 gap-4">
+      {activeTab === "Umumiy" && (
+        <div className="grid lg:grid-cols-3 gap-6">
+          <div className="card p-6 lg:col-span-2 space-y-4">
+            <h2 className="font-semibold">Umumiy ma&apos;lumotlar</h2>
+            {[
+              ["storeName", "Do'kon nomi"],
+              ["phone", "Telefon"],
+              ["email", "Email"],
+              ["address", "Manzil"],
+            ].map(([key, label]) => (
+              <div key={key}>
+                <label className="text-sm font-medium mb-1 block">{label}</label>
+                <input
+                  className="input-field"
+                  value={form[key as keyof SettingsDto] as string}
+                  onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+                />
+              </div>
+            ))}
             <div>
               <label className="text-sm font-medium mb-1 block">Valyuta</label>
               <select
@@ -94,40 +102,34 @@ export default function SettingsPage() {
                 <option>USD</option>
               </select>
             </div>
-            <div>
-              <label className="text-sm font-medium mb-1 block">Vaqt mintaqasi</label>
-              <select
-                className="input-field"
-                value={form.timezone}
-                onChange={(e) => setForm({ ...form, timezone: e.target.value })}
-              >
-                <option>Asia/Tashkent (UTC+5)</option>
-              </select>
+          </div>
+
+          <div className="card p-6 space-y-4">
+            <h2 className="font-semibold">Logo</h2>
+            <div className="relative aspect-square max-w-[200px] mx-auto rounded-[20px] bg-gray-100 overflow-hidden">
+              {form.logo ? (
+                <Image src={form.logo} alt="Logo" fill className="object-contain p-4" />
+              ) : (
+                <div className="flex items-center justify-center h-full text-gray-400 text-sm">Logo</div>
+              )}
             </div>
+            <label className="btn-secondary w-full text-center cursor-pointer block py-2.5">
+              Logo yuklash
+              <input type="file" accept="image/*" className="hidden" onChange={onLogo} />
+            </label>
+          </div>
+
+          <div className="lg:col-span-3 flex justify-end items-center gap-3">
+            {msg && <span className="text-sm text-green-600">{msg}</span>}
+            <button type="button" onClick={save} disabled={saving} className="btn-primary px-8">
+              {saving ? "Saqlanmoqda..." : "Saqlash"}
+            </button>
           </div>
         </div>
-
-        <div className="card p-6">
-          <h2 className="font-semibold mb-4">Logo</h2>
-          <div className="relative aspect-square max-w-[200px] mx-auto rounded-[20px] overflow-hidden bg-gray-100 mb-4">
-            <Image
-              src="https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=400&fit=crop"
-              alt="Logo"
-              fill
-              className="object-cover"
-            />
-          </div>
-          <button type="button" className="btn-secondary w-full">
-            Logo yuklash
-          </button>
-        </div>
-      </div>
-
-      <div className="mt-6 flex justify-end">
-        <button type="button" className="btn-primary w-full sm:w-auto">
-          Saqlash
-        </button>
-      </div>
+      )}
+      {activeTab !== "Umumiy" && (
+        <p className="text-gray-500 text-sm">Bu bo&apos;lim tez orada qo&apos;shiladi.</p>
+      )}
     </DashboardLayout>
   );
 }

@@ -6,6 +6,7 @@ export const dynamic = "force-dynamic";
 import { connectDB } from "@/lib/mongodb";
 import { User } from "@/lib/models/User";
 import { normalizePhone, phoneToLoginEmail } from "@/lib/phone-auth";
+import { dbConnectionMessage } from "@/lib/db-errors";
 
 export async function POST(req: Request) {
   try {
@@ -50,6 +51,10 @@ export async function POST(req: Request) {
     );
   } catch (e) {
     console.error(e);
-    return NextResponse.json({ error: "Ro'yxatdan o'tishda xato" }, { status: 500 });
+    const dbMsg = dbConnectionMessage(e);
+    return NextResponse.json(
+      { error: dbMsg ?? "Ro'yxatdan o'tishda xato" },
+      { status: dbMsg ? 503 : 500 }
+    );
   }
 }

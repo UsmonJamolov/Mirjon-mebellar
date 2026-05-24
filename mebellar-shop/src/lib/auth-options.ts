@@ -30,17 +30,20 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Parol", type: "password" },
       },
       async authorize(credentials) {
-        const identifier = credentials?.email?.trim().toLowerCase() ?? "";
+        const raw = credentials?.email?.trim() ?? "";
         const password = credentials?.password;
 
-        if (!identifier || !password) return null;
+        if (!raw || !password) return null;
+
+        const identifier = isEmailLike(raw) ? raw.toLowerCase() : normalizePhone(raw);
+        if (!identifier) return null;
 
         await connectDB();
         const user = isEmailLike(identifier)
           ? await User.findOne({ email: identifier }).select("+passwordHash")
           : await User.findOne({
               $or: [
-                { phone: normalizePhone(identifier) },
+                { phone: identifier },
                 { email: phoneToLoginEmail(identifier) },
               ],
             }).select("+passwordHash");

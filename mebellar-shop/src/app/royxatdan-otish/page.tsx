@@ -9,7 +9,8 @@ import { AuthShell } from "@/components/auth/AuthShell";
 import { AuthField } from "@/components/auth/AuthField";
 import { AuthSubmitButton } from "@/components/auth/AuthSubmitButton";
 import { AuthAlert } from "@/components/auth/AuthAlert";
-import { normalizePhone } from "@/lib/phone-auth";
+import { loginIdentifierFromPhone, normalizePhone } from "@/lib/phone-auth";
+import { parseAuthResponse, redirectAfterAuth } from "@/lib/auth-client";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -17,14 +18,23 @@ export default function RegisterPage() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setSuccess("");
     setLoading(true);
 
     const normalizedPhone = normalizePhone(phone);
+    const loginId = loginIdentifierFromPhone(phone);
+
+    if (!normalizedPhone || !loginId) {
+      setError("Telefon raqam noto'g'ri");
+      setLoading(false);
+      return;
+    }
 
     try {
       const res = await fetch("/api/auth/register", {
@@ -32,31 +42,30 @@ export default function RegisterPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, phone: normalizedPhone, password }),
       });
-      const data = await res.json();
+      const { ok, data } = await parseAuthResponse(res);
 
-      if (!res.ok) {
+      if (!ok) {
         setError(data.error ?? "Xato yuz berdi");
         setLoading(false);
         return;
       }
 
       const login = await signIn("credentials", {
-        email: normalizedPhone,
+        email: loginId,
         password,
         redirect: false,
       });
 
-      setLoading(false);
-
       if (login?.error) {
-        router.push("/kirish");
+        setSuccess("Hisob yaratildi. Kirish sahifasiga o'ting.");
+        setLoading(false);
+        router.push("/kirish?registered=1");
         return;
       }
 
-      router.push("/profil");
-      router.refresh();
+      redirectAfterAuth("/profil");
     } catch {
-      setError("Server bilan bog'lanib bo'lmadi");
+      setError("Server bilan bog'lanib bo'lmadi. MongoDB ishlayotganini tekshiring.");
       setLoading(false);
     }
   };
@@ -79,7 +88,8 @@ export default function RegisterPage() {
       }
     >
       <form onSubmit={handleSubmit} className="space-y-2.5 lg:space-y-4">
-        {error && <AuthAlert message={error} />}
+        {error && <AuthAlert message={error} variant="error" />}
+        {success && <AuthAlert message={success} variant="success" />}
 
         <AuthField
           id="reg-name"

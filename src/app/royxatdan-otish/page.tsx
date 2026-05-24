@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { User, Mail, Lock, KeyRound, UserPlus, ArrowRight } from "lucide-react";
 import { AdminAuthShell } from "@/components/auth/AdminAuthShell";
 import { AdminAuthField } from "@/components/auth/AdminAuthField";
+import { parseAuthResponse, redirectAfterAuth } from "@/lib/auth-client";
 
 export default function AdminRegisterPage() {
   const router = useRouter();
@@ -16,6 +17,7 @@ export default function AdminRegisterPage() {
   const [password, setPassword] = useState("");
   const [adminSecret, setAdminSecret] = useState("");
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -89,6 +91,11 @@ export default function AdminRegisterPage() {
         {error && (
           <p className="rounded-[12px] bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
             {error}
+          </p>
+        )}
+        {success && (
+          <p className="rounded-[12px] bg-emerald-50 border border-emerald-200 px-3 py-2 text-sm text-emerald-800">
+            {success}
           </p>
         )}
 

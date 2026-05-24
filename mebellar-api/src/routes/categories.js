@@ -12,3 +12,25 @@ categoriesRouter.get("/", async (_req, res) => {
     res.status(500).json({ error: "Kategoriyalarni yuklashda xato" });
   }
 });
+
+categoriesRouter.post("/", async (req, res) => {
+  try {
+    const name = String(req.body.name ?? "").trim();
+    if (!name) return res.status(400).json({ error: "Kategoriya nomi kerak" });
+    const slug = name.toLowerCase().replace(/\s+/g, "-");
+    const externalId = `cat-${Date.now()}`;
+    const doc = await Category.create({
+      externalId,
+      name,
+      slug,
+      image:
+        req.body.image ||
+        "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=300&fit=crop",
+      count: 0,
+    });
+    res.status(201).json(toCategoryDto(doc));
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Kategoriya qo'shishda xato" });
+  }
+});

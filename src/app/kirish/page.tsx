@@ -7,24 +7,32 @@ import { Suspense, useEffect, useState } from "react";
 import { Mail, Lock, LogIn, ArrowRight } from "lucide-react";
 import { AdminAuthShell } from "@/components/auth/AdminAuthShell";
 import { AdminAuthField } from "@/components/auth/AdminAuthField";
+import { redirectAfterAuth } from "@/lib/auth-client";
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/";
   const urlError = searchParams.get("error");
+  const registered = searchParams.get("registered");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [info, setInfo] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (urlError === "Configuration") {
       setError("Auth sozlamasi yangilandi. Qayta urinib ko'ring.");
       router.replace("/kirish");
+      return;
     }
-  }, [urlError, router]);
+    if (registered === "1") {
+      setInfo("Admin hisob yaratildi. Email va parolingiz bilan kiring.");
+      router.replace("/kirish");
+    }
+  }, [urlError, registered, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,8 +52,7 @@ function LoginForm() {
       return;
     }
 
-    router.push(callbackUrl);
-    router.refresh();
+    redirectAfterAuth(callbackUrl);
   };
 
   return (
@@ -67,6 +74,11 @@ function LoginForm() {
       }
     >
       <form onSubmit={handleSubmit} className="space-y-4">
+        {info && (
+          <p className="rounded-[12px] bg-emerald-50 border border-emerald-200 px-3 py-2 text-sm text-emerald-800">
+            {info}
+          </p>
+        )}
         {error && (
           <p className="rounded-[12px] bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
             {error}

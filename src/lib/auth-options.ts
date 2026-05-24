@@ -11,6 +11,7 @@ const authSecret =
 
 export const authOptions: NextAuthOptions = {
   secret: authSecret,
+  ...(process.env.AUTH_TRUST_HOST === "true" ? { trustHost: true } : {}),
   session: { strategy: "jwt", maxAge: 30 * 24 * 60 * 60 },
   pages: {
     signIn: "/kirish",

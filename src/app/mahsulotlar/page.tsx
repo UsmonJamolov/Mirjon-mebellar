@@ -2,9 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Filter, Plus, Search } from "lucide-react";
+import { Filter, Plus } from "lucide-react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { PageTitle } from "@/components/ui/PageTitle";
+import { SearchInput } from "@/components/ui/SearchInput";
 import { products, formatPrice } from "@/lib/mock-data";
 
 export default function ProductsPage() {
@@ -14,7 +15,7 @@ export default function ProductsPage() {
         title="Mahsulotlar"
         subtitle="Mahsulotlar katalogi"
         action={
-          <Link href="/mahsulotlar/1" className="btn-primary flex items-center gap-2">
+          <Link href="/mahsulotlar/new" className="btn-primary flex items-center gap-2">
             <Plus size={18} />
             Mahsulot qo&apos;shish
           </Link>
@@ -22,14 +23,7 @@ export default function ProductsPage() {
       />
 
       <div className="flex gap-2 mb-6">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-          <input
-            type="search"
-            placeholder="Mahsulot qidirish..."
-            className="input-field pl-10"
-          />
-        </div>
+        <SearchInput className="flex-1" placeholder="Mahsulot qidirish..." />
         <button type="button" className="btn-secondary flex items-center gap-2">
           <Filter size={18} />
           Filter
