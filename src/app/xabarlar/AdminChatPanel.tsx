@@ -1,7 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { Paperclip, Send } from "lucide-react";
+import { Fragment, useEffect, useRef, useState } from "react";
+import { ChatDateSeparator } from "@/components/chat/ChatDateSeparator";
+import { SketchMessageCard } from "@/components/chat/SketchMessageCard";
+import { ChatAgreementBar } from "@/components/chat/ChatAgreementBar";
+import { ChatStatusBar } from "@/components/chat/ChatStatusBar";
+import { IconSend } from "@/components/ui/ChatIcons";
+import { SketchPreview } from "@/components/sketch/SketchPreview";
+import { DimensionInput } from "@/components/sketch/DimensionInput";
 import {
   agreeToStartWork,
   cancelChatAgreement,
@@ -9,10 +15,13 @@ import {
   formatSketchSummary,
   sendChatMessage,
   updateChatSketch,
-  CHAT_STATUS_LABELS,
   type ChatThreadState,
   type SketchData,
 } from "@/lib/chat-api";
+import { formatCustomerPresence, isOrderStarted } from "@/lib/chat-rules";
+import { usePresenceTicker } from "@/hooks/usePresenceTicker";
+import { formatChatDayLabel, shouldShowChatDaySeparator } from "@/lib/chat-date";
+import { getLatestSketchMessageId } from "@/lib/chat-types";
 import { cn } from "@/lib/utils";
 
 const ROLE = "admin" as const;
@@ -21,7 +30,6 @@ interface AdminChatPanelProps {
   thread: ChatThreadState | null;
   onThreadUpdate: (t: ChatThreadState) => void;
   onRefresh: () => void;
-  /** Mock mijozlar — xabarlar mahalliy saqlanadi (API emas) */
   localMode?: boolean;
 }
 
@@ -32,22 +40,15 @@ export function AdminChatPanel({
   localMode = false,
 }: AdminChatPanelProps) {
   const [input, setInput] = useState("");
-  const [sketchOpen, setSketchOpen] = useState(false);
   const [draftSketch, setDraftSketch] = useState<SketchData | null>(null);
   const [loading, setLoading] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
-  const [sketchForm, setSketchForm] = useState<SketchData>({
-    type: "Shkaf",
-    length: 200,
-    width: 60,
-    height: 220,
-    material: "MDF 18mm",
-  });
+  const [openSketch, setOpenSketch] = useState<SketchData | null>(null);
+  const [openSketchMessageId, setOpenSketchMessageId] = useState<string | null>(null);
+  const [modalDraft, setModalDraft] = useState<SketchData | null>(null);
+  const [modalSaving, setModalSaving] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (thread?.activeSketch) setSketchForm({ ...thread.activeSketch.data });
-  }, [thread?.activeSketch?.version]);
+  usePresenceTicker(5000);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -63,7 +64,7 @@ export function AdminChatPanel({
         const newMsg = {
           id: `msg-${Date.now()}`,
           sender: "admin" as const,
-          text: text || (draftSketch ? `📐 ${formatSketchSummary(draftSketch)}` : ""),
+          text: text || (draftSketch ? "📐 Eskiz yuborildi" : ""),
           sketch: draftSketch ?? undefined,
           createdAt: new Date().toISOString(),
         };
@@ -77,7 +78,10 @@ export function AdminChatPanel({
       }
 
       onThreadUpdate(
-        await sendChatMessage(ROLE, { text: text || undefined, sketch: draftSketch ?? undefined })
+        await sendChatMessage(ROLE, {
+          text: text || (draftSketch ? "📐 Eskiz yuborildi" : undefined),
+          sketch: draftSketch ?? undefined,
+        })
       );
       setInput("");
       setDraftSketch(null);
@@ -89,30 +93,27 @@ export function AdminChatPanel({
     }
   };
 
-  const saveSketch = async () => {
+  const handleAgree = async (messageId?: string) => {
     setLoading(true);
     try {
-      onThreadUpdate(await updateChatSketch(ROLE, sketchForm));
-      setSketchOpen(false);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleAgree = async () => {
-    setLoading(true);
-    try {
-      onThreadUpdate(await agreeToStartWork(ROLE));
+      const targetId =
+        messageId ?? openSketchMessageId ?? getLatestSketchMessageId(thread?.messages ?? []);
+      if (localMode && thread) {
+        onThreadUpdate({ ...thread, adminAgreed: true, status: "sotuvchi_rozi" });
+        return;
+      }
+      onThreadUpdate(await agreeToStartWork(ROLE, targetId ?? undefined));
+      onRefresh();
     } finally {
       setLoading(false);
     }
   };
 
   const handleCancelAgreement = async () => {
-    if (!confirm("Kelishuvni bekor qilasizmi? Mijoz yana eskizni tahrirlashi mumkin bo'ladi.")) return;
     setLoading(true);
     try {
       onThreadUpdate(await cancelChatAgreement());
+      onRefresh();
     } finally {
       setLoading(false);
     }
@@ -122,7 +123,7 @@ export function AdminChatPanel({
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-8 gap-3">
         <p className="text-sm text-gray-500 text-center">
-          Chat yuklanmoqda... (mebellar-api :4000 ishlayotganini tekshiring)
+          Chat yuklanmoqda... Shop (3001) va admin (3000) ishlayotganini tekshiring.
         </p>
         <button type="button" onClick={onRefresh} className="btn-primary text-xs py-2 px-4">
           Qayta urinish
@@ -131,191 +132,275 @@ export function AdminChatPanel({
     );
   }
 
-  const myAgreed = thread.adminAgreed;
-  const done = thread.status === "buyurtma_boshlandi";
+  const done = isOrderStarted(thread);
+  const customerPresence = formatCustomerPresence(
+    localMode ? null : thread.customerLastSeenAt
+  );
 
   return (
-    <div className="flex-1 flex flex-col min-h-0">
+    <div className="flex-1 flex flex-col min-h-0 bg-white">
       {!localMode && (
-      <div className="px-4 py-2 bg-gray-50 border-b flex flex-wrap gap-2 text-xs shrink-0">
-        <span className="font-medium text-[#1e1e2f]">{CHAT_STATUS_LABELS[thread.status]}</span>
-        <span className="text-gray-500">
-          Mijoz: {thread.customerAgreed ? "✓" : "—"} · Sotuvchi: {thread.adminAgreed ? "✓" : "—"}
-        </span>
-      </div>
+        <ChatStatusBar
+          status={thread.status}
+          customerAgreed={thread.customerAgreed}
+          adminAgreed={thread.adminAgreed}
+        />
       )}
 
-      {!localMode && (
-      <div className="border-b bg-white px-4 py-2 shrink-0">
-        <button
-          type="button"
-          onClick={() => setSketchOpen((o) => !o)}
-          className="text-xs font-medium text-[#3b82f6] hover:underline"
-        >
-          {sketchOpen ? "Eskiz panelini yopish" : "Umumiy eskizni tahrirlash / yuborish"}
-        </button>
-        {thread.activeSketch && !sketchOpen && (
-          <p className="text-xs text-gray-500 mt-1">{formatSketchSummary(thread.activeSketch.data)}</p>
-        )}
-        {sketchOpen && (
-          <div className="mt-3 grid grid-cols-2 sm:grid-cols-5 gap-2">
-            <input
-              className="input-field text-xs"
-              value={sketchForm.type}
-              onChange={(e) => setSketchForm((s) => ({ ...s, type: e.target.value }))}
-            />
-            <input
-              type="number"
-              className="input-field text-xs"
-              placeholder="Uzunlik"
-              value={sketchForm.length}
-              onChange={(e) => setSketchForm((s) => ({ ...s, length: Number(e.target.value) }))}
-            />
-            <input
-              type="number"
-              className="input-field text-xs"
-              placeholder="Chuqurlik"
-              value={sketchForm.width}
-              onChange={(e) => setSketchForm((s) => ({ ...s, width: Number(e.target.value) }))}
-            />
-            <input
-              type="number"
-              className="input-field text-xs"
-              placeholder="Balandlik"
-              value={sketchForm.height}
-              onChange={(e) => setSketchForm((s) => ({ ...s, height: Number(e.target.value) }))}
-            />
-            <button type="button" onClick={saveSketch} disabled={loading} className="btn-primary text-xs py-2">
-              Saqlash
-            </button>
-          </div>
-        )}
-      </div>
-      )}
+      <div className="chat-messages-panel min-h-0 flex-1 p-4 space-y-3 bg-gray-50">
+        {thread.messages.map((m, index) => {
+          const isOutgoing = m.sender === ROLE;
 
-      <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide p-4 space-y-3 bg-[#f5f5f5]">
-        {thread.messages.map((m) => (
-          <div key={m.id} className={cn("flex", m.sender === "admin" ? "justify-end" : "justify-start")}>
-            <div
-              className={cn(
-                "max-w-[85%] rounded-[20px] px-4 py-2.5 text-sm shadow-sm",
-                m.sender === "admin"
-                  ? "bg-[#f4a261] text-white rounded-br-sm"
-                  : "bg-white text-[#1e1e2f] rounded-bl-sm"
+          return (
+            <Fragment key={m.id}>
+              {shouldShowChatDaySeparator(thread.messages, index) && (
+                <ChatDateSeparator label={formatChatDayLabel(m.createdAt)} />
               )}
-            >
-              {m.sketch && (
+              <div className={cn("flex", isOutgoing ? "justify-end" : "justify-start")}>
                 <div
                   className={cn(
-                    "rounded-lg p-2 text-xs mb-2",
-                    m.sender === "admin" ? "bg-white/15" : "bg-gray-50 border"
+                    "max-w-[min(85%,320px)] rounded-[20px] px-4 py-2.5 text-sm text-white shadow-sm",
+                    isOutgoing
+                      ? "bg-[#f4a261] rounded-br-sm"
+                      : "bg-[#f4a261] rounded-bl-sm"
                   )}
                 >
-                  📐 {formatSketchSummary(m.sketch)}
+                  {m.sketch && (
+                    <SketchMessageCard
+                      sketch={m.sketch}
+                      variant="customer"
+                      onOpen={() => {
+                        setOpenSketch(m.sketch!);
+                        setOpenSketchMessageId(m.id);
+                        setModalDraft({ ...m.sketch! });
+                      }}
+                    />
+                  )}
+                  {m.text && <p className={m.sketch ? "mt-2 text-white" : "text-white"}>{m.text}</p>}
+                  <p className="text-[10px] mt-1.5 text-white/80">
+                    {formatMessageTime(m.createdAt)}
+                  </p>
                 </div>
-              )}
-              {m.text && <p>{m.text}</p>}
-              <p className={cn("text-[10px] mt-1", m.sender === "admin" ? "text-white/80" : "text-gray-400")}>
-                {formatMessageTime(m.createdAt)}
-              </p>
-            </div>
-          </div>
-        ))}
+              </div>
+            </Fragment>
+          );
+        })}
         <div ref={bottomRef} />
       </div>
 
-      {!localMode && !done && (
-        <div className="px-4 py-2 border-t bg-gray-50 flex flex-wrap justify-between items-center gap-2 shrink-0">
-          <p className="text-xs text-gray-500">
-            {myAgreed ? "Rozilik berilgan" : "Mijoz bilan kelishgach tasdiqlang"}
-          </p>
-          <button
-            type="button"
-            onClick={handleAgree}
-            disabled={myAgreed || loading}
-            className="btn-primary text-xs py-2 px-3 disabled:opacity-50"
-          >
-            Ishni boshlashga roziman
-          </button>
-        </div>
+      {!localMode && (
+        <>
+          <ChatAgreementBar
+            role={ROLE}
+            thread={thread}
+            onAgree={() => handleAgree()}
+            onCancelAgreement={handleCancelAgreement}
+            loading={loading}
+          />
+
+          {!done && (thread.customerAgreed || thread.adminAgreed) && (
+            <div className="px-4 py-2 border-t bg-amber-50 shrink-0">
+              <button
+                type="button"
+                onClick={handleCancelAgreement}
+                disabled={loading}
+                className="w-full text-xs font-medium text-amber-800 hover:underline"
+              >
+                Kelishuvni bekor qilish
+              </button>
+            </div>
+          )}
+        </>
       )}
 
-      {!localMode && done && (
-        <div className="px-4 py-2 border-t bg-green-50 shrink-0 space-y-2">
-          <p className="text-center text-sm font-medium text-green-800">
-            Buyurtma qabul qilindi — mijoz eskizni o&apos;zgartira olmaydi
-          </p>
-          <button
-            type="button"
-            onClick={handleCancelAgreement}
+      <div className="relative border-t bg-white shrink-0">
+        {sendError && <p className="px-4 pt-2 text-xs text-red-600">{sendError}</p>}
+
+        {draftSketch && (
+          <div className="px-4 pt-3 flex items-start gap-2 border-b border-[#f5f0e8]">
+            <div className="flex-1 min-w-0 rounded-[14px] bg-[#faf8f5] border border-[#ebe6df] px-3 py-2">
+              <p className="text-[10px] font-semibold text-[#f4a261] uppercase tracking-wide mb-0.5">
+                Yuboriladigan eskiz
+              </p>
+              <p className="text-xs text-[#3d3229] truncate">{formatSketchSummary(draftSketch)}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setDraftSketch(null)}
+              className="shrink-0 text-gray-400 hover:text-[#3d3229] text-lg px-1"
+              aria-label="Olib tashlash"
+            >
+              ×
+            </button>
+          </div>
+        )}
+
+        <div className="p-4 flex flex-wrap gap-2 items-center">
+          {!localMode && thread.activeSketch && !draftSketch && (
+            <button
+              type="button"
+              onClick={() => setDraftSketch({ ...thread.activeSketch!.data })}
+              className="text-xs font-medium text-[#f4a261] hover:underline shrink-0"
+            >
+              Eskiz biriktirish
+            </button>
+          )}
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && !loading && send()}
+            placeholder="Xabar yozing..."
+            className="input-field flex-1 min-w-[140px] py-2.5 border-[#e5dfd6] focus:border-[#f4a261] focus:ring-[#f4a261]/25"
             disabled={loading}
-            className="w-full rounded-[12px] border border-amber-300 bg-amber-50 py-2 text-xs font-semibold text-amber-900 hover:bg-amber-100 disabled:opacity-50"
-          >
-            Kelishuvni bekor qilish
-          </button>
-        </div>
-      )}
-
-      {!localMode && (thread.customerAgreed || thread.adminAgreed) && !done && (
-        <div className="px-4 py-2 border-t bg-amber-50 shrink-0">
+          />
           <button
             type="button"
-            onClick={handleCancelAgreement}
-            disabled={loading}
-            className="w-full text-xs font-medium text-amber-800 hover:underline"
+            onClick={send}
+            disabled={loading || (!input.trim() && !draftSketch)}
+            className="btn-icon-accent disabled:opacity-50"
+            aria-label="Yuborish"
           >
-            Kelishuvni bekor qilish
+            <IconSend size={20} />
           </button>
         </div>
-      )}
-
-      {sendError && (
-        <p className="px-4 pt-2 text-xs text-red-600 shrink-0">{sendError}</p>
-      )}
-      <div className="p-4 border-t flex gap-2 bg-white shrink-0">
-        <button
-          type="button"
-          className="flex h-11 w-11 items-center justify-center rounded-[14px] border border-gray-200"
-          onClick={() =>
-            setDraftSketch(
-              thread.activeSketch?.data ?? {
-                type: "Shkaf",
-                length: 200,
-                width: 60,
-                height: 220,
-                material: "MDF 18mm",
-              }
-            )
-          }
-          aria-label="Eskiz"
-        >
-          <Paperclip size={20} />
-        </button>
-        <input
-          className="input-field flex-1"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && send()}
-          placeholder="Xabar yozing..."
-          disabled={loading}
-        />
-        <button
-          type="button"
-          onClick={send}
-          disabled={loading || (!input.trim() && !draftSketch)}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-[#3b82f6] text-white shadow-md transition hover:bg-[#2563eb] disabled:opacity-50"
-          aria-label="Yuborish"
-        >
-          <Send size={22} strokeWidth={2.25} className="shrink-0" />
-        </button>
       </div>
-      {draftSketch && (
-        <p className="text-xs text-center text-gray-500 pb-2 shrink-0">
-          Yuboriladi: {formatSketchSummary(draftSketch)}{" "}
-          <button type="button" className="text-red-500" onClick={() => setDraftSketch(null)}>
-            bekor
-          </button>
-        </p>
+
+      {openSketch && !localMode && (
+        <div
+          className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/35 p-4"
+          role="dialog"
+          aria-modal="true"
+          onMouseDown={() => {
+            setOpenSketch(null);
+            setOpenSketchMessageId(null);
+          }}
+        >
+          <div
+            className="w-full max-w-3xl rounded-[22px] bg-white shadow-[0_30px_120px_rgba(0,0,0,0.25)] overflow-hidden"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-[#ebe6df] px-4 py-3">
+              <div>
+                <p className="text-sm font-semibold text-[#3d3229]">Eskiz</p>
+                <p className="text-[11px] text-[#6b5f52]">
+                  {openSketch.type} · {openSketch.length}×{openSketch.width}×{openSketch.height} sm ·{" "}
+                  {openSketch.material}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="h-10 w-10 rounded-[14px] border border-[#ebe6df] text-[#3d3229] hover:bg-[#faf8f5]"
+                onClick={() => {
+                  setOpenSketch(null);
+                  setOpenSketchMessageId(null);
+                }}
+                aria-label="Yopish"
+              >
+                ×
+              </button>
+            </div>
+            <div className="grid gap-4 p-4 bg-[#faf8f5] lg:grid-cols-[1.15fr_0.85fr]">
+              <div className="bg-white rounded-[18px] border border-[#ebe6df] p-3">
+                <SketchPreview
+                  length={(modalDraft ?? openSketch).length}
+                  width={(modalDraft ?? openSketch).width}
+                  height={(modalDraft ?? openSketch).height}
+                  type={(modalDraft ?? openSketch).type}
+                  material={(modalDraft ?? openSketch).material}
+                />
+              </div>
+              <div className="bg-white rounded-[18px] border border-[#ebe6df] p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#6b5f52]">
+                  Tahrirlash
+                </p>
+                <div className="mt-3 space-y-3">
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Mahsulot turi</label>
+                    <select
+                      className="input-field border-[#e5dfd6] focus:border-[#f4a261] focus:ring-[#f4a261]/25"
+                      value={(modalDraft ?? openSketch).type}
+                      onChange={(e) =>
+                        setModalDraft((s) => ({ ...(s ?? openSketch), type: e.target.value }))
+                      }
+                      disabled={done}
+                    >
+                      <option>Shkaf</option>
+                      <option>Oshxona</option>
+                      <option>Stol</option>
+                      <option>Divan</option>
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                    <DimensionInput
+                      id="admin-modal-l"
+                      label="Uzunlik (sm)"
+                      value={(modalDraft ?? openSketch).length}
+                      onChange={(n) =>
+                        setModalDraft((s) => ({ ...(s ?? openSketch), length: n }))
+                      }
+                    />
+                    <DimensionInput
+                      id="admin-modal-w"
+                      label="Chuqurlik (sm)"
+                      value={(modalDraft ?? openSketch).width}
+                      onChange={(n) =>
+                        setModalDraft((s) => ({ ...(s ?? openSketch), width: n }))
+                      }
+                    />
+                    <DimensionInput
+                      id="admin-modal-h"
+                      label="Balandlik (sm)"
+                      value={(modalDraft ?? openSketch).height}
+                      onChange={(n) =>
+                        setModalDraft((s) => ({ ...(s ?? openSketch), height: n }))
+                      }
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Material</label>
+                    <select
+                      className="input-field border-[#e5dfd6] focus:border-[#f4a261] focus:ring-[#f4a261]/25"
+                      value={(modalDraft ?? openSketch).material}
+                      onChange={(e) =>
+                        setModalDraft((s) => ({
+                          ...(s ?? openSketch),
+                          material: e.target.value,
+                        }))
+                      }
+                      disabled={done}
+                    >
+                      <option>MDF 18mm</option>
+                      <option>MDF 16mm</option>
+                      <option>Laminat</option>
+                    </select>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-accent w-full"
+                    disabled={modalSaving || done || !modalDraft}
+                    onClick={async () => {
+                      if (!modalDraft) return;
+                      setModalSaving(true);
+                      try {
+                        onThreadUpdate(await updateChatSketch(ROLE, modalDraft));
+                        setOpenSketch(modalDraft);
+                        setSendError(null);
+                        onRefresh();
+                      } catch {
+                        setSendError("Eskiz saqlanmadi.");
+                      } finally {
+                        setModalSaving(false);
+                      }
+                    }}
+                  >
+                    {modalSaving ? "Saqlanmoqda..." : "Saqlash va chatga yuborish"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

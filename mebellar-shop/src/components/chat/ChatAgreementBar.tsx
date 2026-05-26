@@ -69,7 +69,9 @@ export function ChatAgreementBar({
         type="button"
         onClick={onAgree}
         disabled={myAgreed || loading}
-        className="btn-accent shrink-0 px-4 py-2 text-xs disabled:opacity-50"
+        className={`shrink-0 px-4 py-2 text-xs disabled:opacity-100 ${
+          myAgreed ? "btn-success" : "btn-accent"
+        }`}
       >
         {myAgreed ? "Rozilik berilgan" : "Ishni boshlashga roziman"}
       </button>

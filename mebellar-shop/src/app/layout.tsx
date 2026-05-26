@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { Poppins } from "next/font/google";
+import { Poppins, Syne } from "next/font/google";
 import { CartProvider } from "@/context/CartContext";
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { ShopHeader } from "@/components/layout/ShopHeader";
 import { ShopFooter } from "@/components/layout/ShopFooter";
+import { ShopMainShell } from "@/components/layout/ShopMainShell";
 import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import "./globals.css";
 
@@ -12,6 +13,12 @@ const poppins = Poppins({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
   variable: "--font-poppins",
+});
+
+const syne = Syne({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-syne",
 });
 
 export const metadata: Metadata = {
@@ -25,7 +32,7 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
@@ -37,12 +44,12 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${poppins.variable} font-sans antialiased`} suppressHydrationWarning>
+      <body className={`${poppins.variable} ${syne.variable} font-sans antialiased`} suppressHydrationWarning>
         <ThemeProvider>
         <AuthProvider>
         <CartProvider>
           <ShopHeader />
-          <div className="min-h-[calc(100vh-4rem)] pb-20 md:pb-0 bg-[#faf8f5] dark:bg-[#1a1612] transition-colors">{children}</div>
+          <ShopMainShell>{children}</ShopMainShell>
           <ShopFooter />
           <MobileBottomNav />
         </CartProvider>

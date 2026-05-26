@@ -8,14 +8,10 @@ import {
   normalizePhone,
   phoneToLoginEmail,
 } from "@/lib/phone-auth";
-
-const authSecret =
-  process.env.NEXTAUTH_SECRET ??
-  process.env.AUTH_SECRET ??
-  "mebellar-dev-secret-change-in-production";
+import { AUTH_SECRET } from "@/lib/auth-secret";
 
 export const authOptions: NextAuthOptions = {
-  secret: authSecret,
+  secret: AUTH_SECRET,
   trustHost: true,
   session: { strategy: "jwt", maxAge: 30 * 24 * 60 * 60 },
   pages: {
@@ -40,7 +36,12 @@ export const authOptions: NextAuthOptions = {
 
         await connectDB();
         const user = isEmailLike(identifier)
-          ? await User.findOne({ email: identifier }).select("+passwordHash")
+          ? await User.findOne({
+              $or: [
+                { email: identifier },
+                { email: phoneToLoginEmail(identifier.replace(/@.*/, "")) },
+              ],
+            }).select("+passwordHash")
           : await User.findOne({
               $or: [
                 { phone: identifier },
@@ -66,8 +67,10 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user, trigger, session }) {
       if (user) {
+        token.sub = user.id;
         token.id = user.id;
         token.name = user.name;
+        token.email = user.email;
         token.role = (user as { role?: string }).role ?? "customer";
         token.phone = (user as { phone?: string }).phone ?? "";
         token.image = (user as { image?: string }).image ?? "";
@@ -106,8 +109,9 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       if (session.user) {
-        session.user.id = token.id as string;
-        if (token.name) session.user.name = token.name as string;
+        session.user.id = (token.id ?? token.sub) as string;
+        session.user.name = (token.name as string | undefined) ?? session.user.name;
+        session.user.email = (token.email as string | undefined) ?? session.user.email;
         session.user.role = (token.role as string) ?? "customer";
         session.user.phone = (token.phone as string) ?? "";
         session.user.image = (token.image as string) ?? "";

@@ -1,7 +1,7 @@
 const API_BASE =
-  (typeof window !== "undefined"
-    ? process.env.NEXT_PUBLIC_API_URL
-    : process.env.NEXT_PUBLIC_API_URL) || "http://127.0.0.1:4000";
+  typeof window !== "undefined"
+    ? ""
+    : process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") || "http://127.0.0.1:4000";
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {

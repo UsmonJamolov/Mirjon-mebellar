@@ -8,11 +8,9 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") || "http://12
 const nextConfig: NextConfig = {
   async rewrites() {
     return [
-      { source: "/api/chat", destination: `${apiUrl}/api/chat` },
       { source: "/api/products", destination: `${apiUrl}/api/products` },
       { source: "/api/products/:path*", destination: `${apiUrl}/api/products/:path*` },
       { source: "/api/categories", destination: `${apiUrl}/api/categories` },
-      { source: "/api/orders", destination: `${apiUrl}/api/orders` },
       { source: "/api/health/db", destination: `${apiUrl}/api/health/db` },
     ];
   },

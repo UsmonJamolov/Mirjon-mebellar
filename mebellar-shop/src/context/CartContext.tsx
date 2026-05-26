@@ -10,9 +10,17 @@ import {
 } from "react";
 import type { CartItem, Product } from "@/lib/types";
 
+export interface ChatCartItemInput {
+  productId: string;
+  name: string;
+  price: number;
+  image?: string;
+}
+
 interface CartContextValue {
   items: CartItem[];
   addItem: (product: Product, qty?: number) => void;
+  addChatOrderItem: (item: ChatCartItemInput) => void;
   removeItem: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
@@ -54,6 +62,23 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     if (!hydrated) return;
     localStorage.setItem(LIKES_KEY, JSON.stringify(likedIds));
   }, [likedIds, hydrated]);
+
+  const addChatOrderItem = useCallback((item: ChatCartItemInput) => {
+    setItems((prev) => {
+      const existing = prev.find((i) => i.productId === item.productId);
+      if (existing) return prev;
+      return [
+        ...prev,
+        {
+          productId: item.productId,
+          name: item.name,
+          price: item.price,
+          image: item.image ?? "",
+          quantity: 1,
+        },
+      ];
+    });
+  }, []);
 
   const addItem = useCallback((product: Product, qty = 1) => {
     setItems((prev) => {
@@ -117,6 +142,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       value={{
         items,
         addItem,
+        addChatOrderItem,
         removeItem,
         updateQuantity,
         clearCart,

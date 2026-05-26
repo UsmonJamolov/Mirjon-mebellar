@@ -21,24 +21,33 @@ export function ProfileNavLink({
   iconSize = 20,
   onHome = false,
 }: ProfileNavLinkProps) {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const user = session?.user;
+  const isAuthed = Boolean(user?.id || user?.name);
 
   return (
     <Link
       href={href}
       className={className}
-      aria-label="Profil"
+      aria-label={isAuthed ? "Profil" : "Kirish"}
       aria-current={active ? "page" : undefined}
     >
-      {user ? (
+      {isAuthed ? (
         <ProfileAvatar
-          name={user.name}
-          phone={user.phone}
-          email={user.email}
-          image={user.image}
+          name={user?.name}
+          phone={user?.phone}
+          email={user?.email}
+          image={user?.image}
           size="nav"
-          active={false}
+          active={active}
+        />
+      ) : status === "loading" ? (
+        <span
+          className={cn(
+            "inline-flex h-7 w-7 shrink-0 animate-pulse rounded-full bg-[#f4a261]/30",
+            onHome && "bg-white/30"
+          )}
+          aria-hidden
         />
       ) : (
         <span

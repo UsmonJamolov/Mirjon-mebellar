@@ -21,6 +21,8 @@ export function MobileBottomNav() {
   const pathname = usePathname();
   const { count, hydrated } = useCart();
   const { data: session } = useSession();
+  const user = session?.user;
+  const profileHref = user ? "/profil" : "/kirish";
 
   if (isAuthRoute(pathname)) {
     return null;
@@ -28,14 +30,16 @@ export function MobileBottomNav() {
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 flex h-16 items-center justify-around border-t border-gray-100 bg-white/95 backdrop-blur-sm px-2 dark:border-[#3d3229] dark:bg-[#2a221c]/95">
-      {items.map(({ href, label, icon: Icon, badge, profile }) => {
+      {items.map((item) => {
+        const { href, label, icon: Icon, profile } = item;
+        const badge = "badge" in item && item.badge;
         const active = isNavActive(href, pathname);
         const user = session?.user;
 
         return (
           <Link
             key={href}
-            href={href}
+            href={profile ? profileHref : href}
             aria-current={active ? "page" : undefined}
             className={cn(
               "relative flex flex-col items-center gap-0.5 px-2 py-1 text-[10px] font-medium transition",

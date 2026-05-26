@@ -58,7 +58,9 @@ export async function fetchProduct(id: string): Promise<Product | null> {
 
 export async function fetchOrders(): Promise<UserOrder[]> {
   try {
-    return await get<UserOrder[]>("/api/orders", { cache: "no-store" });
+    const res = await fetch("/api/orders", { cache: "no-store", credentials: "include" });
+    if (!res.ok) throw new Error(String(res.status));
+    return (await res.json()) as UserOrder[];
   } catch {
     return mockOrders;
   }

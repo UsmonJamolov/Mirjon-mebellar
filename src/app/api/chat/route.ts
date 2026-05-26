@@ -1,43 +1,108 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { ChatSender } from "@/lib/chat-types";
+import type { SketchData } from "@/lib/sketch-types";
+import {
+  addMessage,
+  cancelAgreement,
+  deleteMessage,
+  readChatStore,
+  setAgreement,
+  startNewOrder,
+  touchAdminPresence,
+  touchCustomerPresence,
+  updateActiveSketch,
+} from "@/lib/chat-persistence";
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") || "http://127.0.0.1:4000";
-const EXPRESS_CHAT = `${API_BASE}/api/chat`;
-
-async function proxy(req: Request) {
-  const url = new URL(req.url);
-  const target = `${EXPRESS_CHAT}${url.search}`;
-
-  const init: RequestInit = {
-    method: req.method,
-    headers: { "Content-Type": "application/json" },
-    cache: "no-store",
-  };
-
-  if (req.method !== "GET" && req.method !== "HEAD") {
-    init.body = await req.text();
-  }
-
-  const res = await fetch(target, init);
-  const body = await res.text();
-  return new NextResponse(body, {
-    status: res.status,
-    headers: { "Content-Type": "application/json" },
-  });
-}
-
-export async function GET(req: NextRequest) {
-  return proxy(req);
+export async function GET() {
+  const state = await readChatStore();
+  return NextResponse.json(state);
 }
 
 export async function POST(req: NextRequest) {
-  return proxy(req);
+  try {
+    const body = (await req.json().catch(() => ({}))) as {
+      action?: string;
+      sender?: ChatSender;
+      text?: string;
+      sketch?: SketchData;
+      messageId?: string;
+      customerName?: string;
+      customerPhone?: string;
+    };
+
+    const action = body.action;
+    const sender = body.sender ?? "customer";
+
+    if (action === "message") {
+      const state = await addMessage(sender, {
+        text: body.text,
+        sketch: body.sketch,
+        customerName: body.customerName,
+        customerPhone: body.customerPhone,
+      });
+      return NextResponse.json(state);
+    }
+
+    if (action === "agree") {
+      const state = await setAgreement(sender, body.messageId, {
+        customerName: body.customerName,
+        customerPhone: body.customerPhone,
+      });
+      return NextResponse.json(state);
+    }
+
+    if (action === "heartbeat") {
+      const state =
+        sender === "customer" ? await touchCustomerPresence() : await touchAdminPresence();
+      return NextResponse.json(state);
+    }
+
+    if (action === "cancelAgreement") {
+      const state = await cancelAgreement();
+      return NextResponse.json(state);
+    }
+
+    if (action === "newOrder") {
+      const state = await startNewOrder();
+      return NextResponse.json(state);
+    }
+
+    if (action === "deleteMessage") {
+      if (!body.messageId) {
+        return NextResponse.json({ error: "messageId kerak" }, { status: 400 });
+      }
+      const state = await deleteMessage(body.messageId, sender);
+      return NextResponse.json(state);
+    }
+
+    return NextResponse.json({ error: "Noto'g'ri action" }, { status: 400 });
+  } catch (e) {
+    console.error("[chat] POST error:", e);
+    return NextResponse.json({ error: "Chat server xatosi" }, { status: 500 });
+  }
 }
 
 export async function PATCH(req: NextRequest) {
-  return proxy(req);
-}
+  try {
+    const body = (await req.json().catch(() => ({}))) as {
+      action?: string;
+      sender?: ChatSender;
+      sketch?: SketchData;
+    };
+    const sender = body.sender ?? "customer";
 
-export async function OPTIONS() {
-  return new NextResponse(null, { status: 204 });
+    if (body.action !== "updateSketch" || !body.sketch) {
+      return NextResponse.json({ error: "Noto'g'ri action" }, { status: 400 });
+    }
+
+    await updateActiveSketch(body.sketch, sender);
+    const state = await addMessage(sender, {
+      text: "Eskiz yangilandi",
+      sketch: body.sketch,
+    });
+    return NextResponse.json(state);
+  } catch (e) {
+    console.error("[chat] PATCH error:", e);
+    return NextResponse.json({ error: "Eskiz saqlanmadi" }, { status: 500 });
+  }
 }

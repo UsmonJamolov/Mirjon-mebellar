@@ -26,6 +26,18 @@
   .btn-secondary {
     @apply rounded-[14px] border border-gray-200 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50;
   }
+  .btn-accent {
+    @apply rounded-[14px] bg-[#f4a261] px-6 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-[#e88b4a] hover:shadow-lg;
+  }
+  .btn-success {
+    @apply rounded-[14px] bg-green-600 px-6 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-green-700 hover:shadow-lg;
+  }
+  .btn-outline {
+    @apply rounded-[14px] border-2 border-[#3d3229] px-6 py-3 text-sm font-semibold text-[#3d3229] transition hover:bg-[#3d3229] hover:text-white;
+  }
+  .btn-icon-accent {
+    @apply inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-[#f4a261] p-0 text-white shadow-md transition hover:bg-[#e88b4a] hover:shadow-lg;
+  }
   .input-field {
     @apply w-full rounded-[14px] border border-gray-200 bg-white px-4 py-2.5 text-sm outline-none transition focus:border-[#3b82f6] focus:ring-2 focus:ring-[#3b82f6]/20;
   }
@@ -47,5 +59,19 @@
   }
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
+    width: 0;
+    height: 0;
+  }
+  .chat-messages-panel {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  .chat-messages-panel::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+    background: transparent;
   }
 }

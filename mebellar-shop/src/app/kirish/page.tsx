@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { signIn } from "next-auth/react";
 import { Suspense, useEffect, useState } from "react";
 import { Phone, Lock, LogIn, ArrowRight } from "lucide-react";
 import { AuthShell } from "@/components/auth/AuthShell";
@@ -10,7 +9,7 @@ import { AuthField } from "@/components/auth/AuthField";
 import { AuthSubmitButton } from "@/components/auth/AuthSubmitButton";
 import { AuthAlert } from "@/components/auth/AuthAlert";
 import { loginIdentifierFromPhone } from "@/lib/phone-auth";
-import { redirectAfterAuth } from "@/lib/auth-client";
+import { signInWithSession } from "@/lib/auth-client";
 
 function LoginForm() {
   const router = useRouter();
@@ -50,20 +49,14 @@ function LoginForm() {
       return;
     }
 
-    const res = await signIn("credentials", {
-      email: loginId,
-      password,
-      redirect: false,
-    });
+    const res = await signInWithSession(loginId, password, callbackUrl);
 
     setLoading(false);
 
-    if (res?.error) {
-      setError("Telefon yoki parol noto'g'ri");
+    if (!res.ok) {
+      setError(res.error === "CredentialsSignin" ? "Telefon yoki parol noto'g'ri" : "Kirish amalga oshmadi");
       return;
     }
-
-    redirectAfterAuth(callbackUrl);
   };
 
   return (

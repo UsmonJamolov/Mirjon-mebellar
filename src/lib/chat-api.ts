@@ -1,13 +1,7 @@
-/** Admin (3000) — mijoz (3001) bilan bir xil Express chat API */
-
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") || "http://127.0.0.1:4000";
+/** Admin (3000) — mijoz shop bilan bir xil data/chat-store.json */
 
 function getChatUrl() {
-  if (typeof window !== "undefined") {
-    return "/api/chat";
-  }
-  return `${API_BASE}/api/chat`;
+  return "/api/chat";
 }
 
 export type ChatSender = "customer" | "admin";
@@ -42,9 +36,11 @@ export interface ChatThreadState {
   status: ChatOrderStatus;
   customerAgreed: boolean;
   adminAgreed: boolean;
+  agreedMessageId?: string | null;
   messages: ChatMessage[];
   activeSketch: ActiveSketch | null;
   adminLastSeenAt?: string | null;
+  customerLastSeenAt?: string | null;
   orderRound?: number;
 }
 
@@ -97,11 +93,11 @@ export async function updateChatSketch(sender: ChatSender, sketch: SketchData) {
   return parse<ChatThreadState>(res);
 }
 
-export async function agreeToStartWork(sender: ChatSender) {
+export async function agreeToStartWork(sender: ChatSender, messageId?: string) {
   const res = await fetch(getChatUrl(), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ action: "agree", sender }),
+    body: JSON.stringify({ action: "agree", sender, messageId }),
   });
   return parse<ChatThreadState>(res);
 }
@@ -113,6 +109,13 @@ export async function sendAdminHeartbeat() {
     body: JSON.stringify({ action: "heartbeat", sender: "admin" }),
   });
   return parse<ChatThreadState>(res);
+}
+
+export async function deleteChatThread(threadId: string) {
+  const res = await fetch(`/api/chat/threads/${encodeURIComponent(threadId)}`, {
+    method: "DELETE",
+  });
+  return parse<ChatThreadState | { ok: boolean }>(res);
 }
 
 export async function cancelChatAgreement() {

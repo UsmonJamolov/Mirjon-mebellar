@@ -1,6 +1,14 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export function ShopFooter() {
+  const pathname = usePathname();
+  if (pathname === "/chat" || pathname.startsWith("/chat/")) {
+    return null;
+  }
+
   return (
     <footer className="bg-[#3d3229] text-[#f5ebe0] mt-0">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">

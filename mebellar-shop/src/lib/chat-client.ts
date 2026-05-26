@@ -26,7 +26,12 @@ export async function fetchChatThread(): Promise<ChatThreadState> {
 
 export async function sendChatMessage(
   sender: ChatSender,
-  payload: { text?: string; sketch?: SketchData; customerName?: string }
+  payload: {
+    text?: string;
+    sketch?: SketchData;
+    customerName?: string;
+    customerPhone?: string;
+  }
 ): Promise<ChatThreadState> {
   const res = await fetch(getChatApiBase(), {
     method: "POST",
@@ -48,22 +53,40 @@ export async function updateChatSketch(
   return parse(res);
 }
 
-export async function agreeToStartWork(sender: ChatSender): Promise<ChatThreadState> {
+export async function agreeToStartWork(
+  sender: ChatSender,
+  messageId?: string,
+  customer?: { customerName?: string; customerPhone?: string }
+): Promise<ChatThreadState> {
   const res = await fetch(getChatApiBase(), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ action: "agree", sender }),
+    body: JSON.stringify({
+      action: "agree",
+      sender,
+      messageId,
+      customerName: customer?.customerName,
+      customerPhone: customer?.customerPhone,
+    }),
+  });
+  return parse(res);
+}
+
+export async function sendChatHeartbeat(sender: ChatSender): Promise<ChatThreadState> {
+  const res = await fetch(getChatApiBase(), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "heartbeat", sender }),
   });
   return parse(res);
 }
 
 export async function sendAdminHeartbeat(): Promise<ChatThreadState> {
-  const res = await fetch(getChatApiBase(), {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ action: "heartbeat", sender: "admin" }),
-  });
-  return parse(res);
+  return sendChatHeartbeat("admin");
+}
+
+export async function sendCustomerHeartbeat(): Promise<ChatThreadState> {
+  return sendChatHeartbeat("customer");
 }
 
 export async function cancelChatAgreement(): Promise<ChatThreadState> {
@@ -71,6 +94,18 @@ export async function cancelChatAgreement(): Promise<ChatThreadState> {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ action: "cancelAgreement", sender: "admin" }),
+  });
+  return parse(res);
+}
+
+export async function deleteChatMessage(
+  sender: ChatSender,
+  messageId: string
+): Promise<ChatThreadState> {
+  const res = await fetch(getChatApiBase(), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "deleteMessage", sender, messageId }),
   });
   return parse(res);
 }

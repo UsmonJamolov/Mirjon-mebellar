@@ -2,11 +2,20 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { fetchChatThread, formatMessageTime, sendAdminHeartbeat, type ChatThreadState } from "@/lib/chat-api";
+import {
+  deleteChatThread,
+  fetchChatThread,
+  formatMessageTime,
+  sendAdminHeartbeat,
+  type ChatThreadState,
+} from "@/lib/chat-api";
 import { adminApi } from "@/lib/api";
 import { AdminChatPanel } from "./AdminChatPanel";
 import { ChatThreadList, type ThreadListItem } from "./ChatThreadList";
 import { createInitialDemoThreads } from "./demo-threads";
+import { formatCustomerPresence } from "@/lib/chat-rules";
+import { usePresenceTicker } from "@/hooks/usePresenceTicker";
+import { Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const DEFAULT_AVATAR =
@@ -19,6 +28,7 @@ export default function MessagesPage() {
   const [listItems, setListItems] = useState<ThreadListItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [mobileShowChat, setMobileShowChat] = useState(false);
+  usePresenceTicker(5000);
 
   const refreshLive = useCallback(async () => {
     try {
@@ -72,8 +82,22 @@ export default function MessagesPage() {
 
   const handleDelete = async (threadId: string) => {
     try {
-      await adminApi.deleteChatThread(threadId);
-      if (selectedId === threadId) setSelectedId("main");
+      if (threadId === "main") {
+        const result = await deleteChatThread("main");
+        if (result && "threadId" in result) {
+          setLiveThread(result);
+        } else {
+          await refreshLive();
+        }
+      } else {
+        await adminApi.deleteChatThread(threadId);
+        setDemoThreads((prev) => {
+          const next = { ...prev };
+          delete next[threadId];
+          return next;
+        });
+        if (selectedId === threadId) setSelectedId("main");
+      }
       loadThreads();
     } catch (e) {
       alert(e instanceof Error ? e.message : "O'chirib bo'lmadi");
@@ -83,6 +107,9 @@ export default function MessagesPage() {
   const selectedName = listItems.find((t) => t.id === selectedId)?.customerName ?? "Mijoz";
   const isLiveChat = selectedId === "main";
   const activeThread = isLiveChat ? liveThread : demoThreads[selectedId] ?? null;
+  const customerPresence = formatCustomerPresence(
+    isLiveChat ? liveThread?.customerLastSeenAt : null
+  );
 
   const handleThreadUpdate = (updated: ChatThreadState) => {
     if (isLiveChat) {
@@ -116,15 +143,33 @@ export default function MessagesPage() {
                 <span className="text-sm lg:text-base truncate">
                   {selectedName}
                   {isLiveChat ? (
-                    <span className="ml-2 text-xs font-normal text-green-600">· jonli</span>
+                    <span className={`ml-2 text-xs font-normal ${customerPresence.className}`}>
+                      ·{" "}
+                      <span
+                        className={`mr-0.5 inline-block h-1.5 w-1.5 rounded-full align-middle ${
+                          customerPresence.online ? "bg-green-500" : "bg-gray-400"
+                        }`}
+                      />
+                      {customerPresence.label}
+                    </span>
                   ) : (
                     <span className="ml-2 text-xs font-normal text-gray-400">· CRM</span>
                   )}
                 </span>
               </div>
-              {isLiveChat && (
-                <span className="text-xs font-normal text-green-600 shrink-0">Sinxron</span>
-              )}
+              <div className="flex items-center gap-2 shrink-0">
+                {isLiveChat && (
+                  <span className="text-xs font-normal text-green-600">Sinxron</span>
+                )}
+                <button
+                  type="button"
+                  title={isLiveChat ? "Mijoz chatini tozalash" : "Chatni o'chirish"}
+                  onClick={() => handleDelete(selectedId)}
+                  className="rounded-lg p-1.5 text-gray-400 transition hover:bg-red-50 hover:text-red-600"
+                >
+                  <Trash2 size={18} />
+                </button>
+              </div>
             </div>
 
             <AdminChatPanel

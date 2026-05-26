@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { User, Phone, Lock, UserPlus, ArrowRight } from "lucide-react";
 import { AuthShell } from "@/components/auth/AuthShell";
@@ -10,7 +9,7 @@ import { AuthField } from "@/components/auth/AuthField";
 import { AuthSubmitButton } from "@/components/auth/AuthSubmitButton";
 import { AuthAlert } from "@/components/auth/AuthAlert";
 import { loginIdentifierFromPhone, normalizePhone } from "@/lib/phone-auth";
-import { parseAuthResponse, redirectAfterAuth } from "@/lib/auth-client";
+import { parseAuthResponse, signInWithSession } from "@/lib/auth-client";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -50,20 +49,14 @@ export default function RegisterPage() {
         return;
       }
 
-      const login = await signIn("credentials", {
-        email: loginId,
-        password,
-        redirect: false,
-      });
+      const login = await signInWithSession(loginId, password, "/profil");
 
-      if (login?.error) {
-        setSuccess("Hisob yaratildi. Kirish sahifasiga o'ting.");
+      if (!login.ok) {
+        setSuccess("Hisob yaratildi. Telefon va parolingiz bilan kiring.");
         setLoading(false);
         router.push("/kirish?registered=1");
         return;
       }
-
-      redirectAfterAuth("/profil");
     } catch {
       setError("Server bilan bog'lanib bo'lmadi. MongoDB ishlayotganini tekshiring.");
       setLoading(false);

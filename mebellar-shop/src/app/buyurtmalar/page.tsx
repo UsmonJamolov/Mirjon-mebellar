@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { fetchOrders } from "@/lib/api";
+import { getAuthSession } from "@/lib/auth-server";
+import { listOrdersForCustomer } from "@/lib/order-persistence";
 import { formatPrice, getOrderStatusLabel } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
@@ -10,12 +11,19 @@ const statusStyle: Record<string, string> = {
 };
 
 export default async function OrdersPage() {
-  const userOrders = await fetchOrders();
+  const session = await getAuthSession();
+  const userOrders = session?.user?.phone
+    ? await listOrdersForCustomer(session.user.phone)
+    : [];
 
   return (
     <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8 lg:py-12">
       <h1 className="text-2xl font-bold mb-2">Buyurtmalarim</h1>
       <p className="text-gray-500 text-sm mb-8">Buyurtmalaringiz holatini kuzating</p>
+
+      {userOrders.length === 0 ? (
+        <p className="text-gray-500 text-sm">Hozircha buyurtmalar yo&apos;q. Chatda kelishuvdan keyin buyurtma shu yerda paydo bo&apos;ladi.</p>
+      ) : null}
 
       <ul className="space-y-4">
         {userOrders.map((order) => (

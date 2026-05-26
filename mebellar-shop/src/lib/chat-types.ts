@@ -26,13 +26,40 @@ export interface ActiveSketch {
 export interface ChatThreadState {
   threadId: string;
   customerName: string;
+  customerPhone?: string;
   status: ChatOrderStatus;
   customerAgreed: boolean;
   adminAgreed: boolean;
+  /** Rozilik berilgan eskiz xabari id */
+  agreedMessageId?: string | null;
   messages: ChatMessage[];
   activeSketch: ActiveSketch | null;
   adminLastSeenAt?: string | null;
+  customerLastSeenAt?: string | null;
   orderRound?: number;
+}
+
+export function getLatestSketchMessageId(messages: ChatMessage[]): string | null {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i].sketch) return messages[i].id;
+  }
+  return null;
+}
+
+export function isAgreedMessageId(
+  messageId: string,
+  thread: Pick<ChatThreadState, "customerAgreed" | "agreedMessageId">
+): boolean {
+  return Boolean(
+    thread.customerAgreed && thread.agreedMessageId && messageId === thread.agreedMessageId
+  );
+}
+
+export function isAgreedSketchMessage(
+  message: ChatMessage,
+  thread: Pick<ChatThreadState, "customerAgreed" | "agreedMessageId">
+): boolean {
+  return Boolean(message.sketch && isAgreedMessageId(message.id, thread));
 }
 
 export const CHAT_STATUS_LABELS: Record<ChatOrderStatus, string> = {

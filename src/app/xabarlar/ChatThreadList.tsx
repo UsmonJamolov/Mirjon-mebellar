@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { Settings, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface ThreadListItem {
@@ -49,8 +49,8 @@ export function ChatThreadList({
           className="w-full rounded-[12px] border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-[#3b82f6] focus:ring-2 focus:ring-[#3b82f6]/20"
         />
         <p className="text-[10px] text-gray-400 flex items-center gap-1">
-          <Settings size={12} />
-          O&apos;chirish: chat ustidagi chiqitish tugmasi (main dan tashqari)
+          <Trash2 size={12} />
+          O&apos;chirish: chiqitchani bosing (chat tozalanadi)
         </p>
       </div>
 
@@ -94,15 +94,15 @@ export function ChatThreadList({
                   </span>
                 ) : null}
               </button>
-              {onDelete && t.id !== "main" && (
+              {onDelete && (
                 <button
                   type="button"
-                  title="Chatni o'chirish"
+                  title={t.id === "main" ? "Mijoz chatini tozalash" : "Chatni o'chirish"}
                   onClick={(e) => {
                     e.stopPropagation();
-                    if (confirm(`"${t.customerName}" chatini o'chirasizmi?`)) onDelete(t.id);
+                    onDelete(t.id);
                   }}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-gray-400 opacity-0 group-hover:opacity-100 hover:bg-red-50 hover:text-red-600 transition"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-gray-400 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 hover:bg-red-50 hover:text-red-600 transition"
                 >
                   <Trash2 size={16} />
                 </button>
