@@ -8,3 +8,6 @@ next-env.d.ts
 .DS_Store
 /public/avatars/*
 !/public/avatars/.gitkeep
+
+# Dev-only persistent storage (OTP sessions, telegram polling state)
+/data/

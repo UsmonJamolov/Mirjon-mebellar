@@ -6,7 +6,9 @@ const userSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     phone: { type: String, trim: true },
     image: { type: String, default: "" },
-    passwordHash: { type: String, required: true, select: false },
+    passwordHash: { type: String, select: false },
+    telegramId: { type: String, default: "", index: true },
+    telegramUsername: { type: String, default: "" },
     role: { type: String, enum: ["customer", "admin"], default: "customer" },
   },
   { timestamps: true }

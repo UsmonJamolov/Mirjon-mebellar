@@ -48,6 +48,9 @@ export function ShopFooter() {
   if (pathname === "/chat" || pathname.startsWith("/chat/")) {
     return null;
   }
+  if (pathname === "/auth" || pathname.startsWith("/auth/")) {
+    return null;
+  }
 
   return (
     <footer className="border-t border-[#ebe6df] bg-white">

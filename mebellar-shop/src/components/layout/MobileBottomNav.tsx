@@ -22,7 +22,7 @@ export function MobileBottomNav() {
   const { count, hydrated } = useCart();
   const { data: session } = useSession();
   const user = session?.user;
-  const profileHref = user ? "/profil" : "/kirish";
+  const profileHref = user ? "/profil" : "/auth";
 
   if (isAuthRoute(pathname)) {
     return null;

@@ -330,6 +330,47 @@
     }
   }
 
+  /* ——— Fullscreen OTP auth page ——— */
+  .auth-fullscreen {
+    background-color: #0c0805;
+  }
+
+  @keyframes auth-otp-fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .auth-otp-fade {
+    animation: auth-otp-fade-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  @keyframes auth-otp-bot-glow {
+    0%,
+    100% {
+      box-shadow: 0 14px 36px rgba(244, 162, 97, 0.18);
+    }
+    50% {
+      box-shadow: 0 22px 60px rgba(244, 162, 97, 0.38);
+    }
+  }
+
+  .auth-otp-bot {
+    animation: auth-otp-bot-glow 3.4s ease-in-out infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .auth-otp-fade,
+    .auth-otp-bot {
+      animation: none;
+    }
+  }
+
   /* ——— Premium futuristic homepage ——— */
   .font-display {
     font-family: var(--font-syne), ui-sans-serif, system-ui, sans-serif;
@@ -436,3 +477,165 @@
     }
   }
 }
+
+/* ────────────────────────────────────────────────────────────────
+   QORONG'U REJIM (Dark mode) — global override qatlami
+   Premium komponentlar va layout'larda yorqin ranglar hardcoded
+   ishlatilgani uchun, dark class faollashganda ularni to'q rangga
+   moslashtiramiz. /auth sahifa istisno (har doim to'q).
+   ──────────────────────────────────────────────────────────────── */
+
+html.dark body {
+  background-color: #1a1612;
+  color: #f5f0e8;
+}
+
+html.dark.bright-home body {
+  background-color: #1a1612;
+  color: #f5f0e8;
+}
+
+html.dark .bright-page {
+  --bright-bg: #1a1612;
+  --bright-paper: #2a221c;
+  --bright-ink: #f5f0e8;
+  --bright-muted: rgba(245, 240, 232, 0.6);
+  --bright-glass: rgba(42, 34, 28, 0.65);
+  --bright-border: rgba(245, 240, 232, 0.12);
+  background: #1a1612;
+  color: #f5f0e8;
+}
+
+html.dark .premium-label {
+  color: rgba(245, 240, 232, 0.55);
+}
+
+html.dark .premium-btn {
+  background: rgba(42, 34, 28, 0.7);
+  border-color: rgba(245, 240, 232, 0.16);
+  color: #f5f0e8;
+}
+html.dark .premium-btn:hover {
+  background: rgba(42, 34, 28, 0.9);
+  border-color: rgba(245, 240, 232, 0.28);
+}
+html.dark .premium-btn-solid {
+  background: #f4a261;
+  color: #1a1612;
+}
+html.dark .premium-btn-solid:hover {
+  background: #e88b4a;
+}
+
+/* /auth sahifa — har doim to'q palitra, override qilinmasin */
+html.dark .auth-fullscreen,
+html.dark .auth-fullscreen * {
+  --tw-bg-opacity: 1;
+}
+
+/* ─── Tailwind utility class override'lari ───
+   Hardcoded yorqin token'lar dark rejimda swap qilinadi.
+   :where() bilan o'rab specificity'ni 0 ga tushiramiz, shu bois
+   komponent ichidagi shaxsiy dark: variantlar bemalol ustun keladi. */
+
+html.dark :where(.bg-white) {
+  background-color: #2a221c !important;
+}
+html.dark :where(.bg-\[\#faf8f5\]) {
+  background-color: #1a1612 !important;
+}
+html.dark :where(.bg-\[\#faf6ef\]) {
+  background-color: #231b16 !important;
+}
+html.dark :where(.bg-\[\#fde8d4\]) {
+  background-color: #2c211a !important;
+}
+html.dark :where(.bg-\[\#f5ebe0\]) {
+  background-color: #271e18 !important;
+}
+html.dark :where(.bg-\[#ffffff\]),
+html.dark :where(.bg-\[\#ffffff\]) {
+  background-color: #2a221c !important;
+}
+
+html.dark :where(.text-\[\#3d3229\]) {
+  color: #f5f0e8 !important;
+}
+html.dark :where(.text-\[\#2a221c\]) {
+  color: #f5f0e8 !important;
+}
+html.dark :where(.text-\[\#6b5f52\]) {
+  color: #b5a898 !important;
+}
+html.dark :where(.text-\[\#8b7d6f\]) {
+  color: #9c8d7f !important;
+}
+
+html.dark :where(.border-\[\#ebe6df\]) {
+  border-color: #3d3229 !important;
+}
+html.dark :where(.border-\[\#f4e9d8\]) {
+  border-color: #3d3229 !important;
+}
+html.dark :where(.border-\[\#ebe6df\]\/80) {
+  border-color: rgba(61, 50, 41, 0.8) !important;
+}
+
+/* Soyalar — yorqin oq soyalarni yumshatadi */
+html.dark :where([class*="shadow-["][class*="rgba(61,50,41"]) {
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Foydalanuvchi rasm/footer aksentlari */
+html.dark :where(.bg-\[\#3d3229\]) {
+  background-color: #0f0c0a !important;
+}
+html.dark :where(.text-\[\#c97b3f\]) {
+  color: #f4a261 !important;
+}
+
+/* Profile / form yorqin gradient placeholderlar */
+html.dark :where(.from-white) {
+  --tw-gradient-from: #2a221c !important;
+  --tw-gradient-stops:
+    var(--tw-gradient-from), var(--tw-gradient-to, transparent) !important;
+}
+html.dark :where(.via-white) {
+  --tw-gradient-via: #2a221c !important;
+}
+html.dark :where(.to-white) {
+  --tw-gradient-to: #2a221c !important;
+}
+
+/* Ko'plab paper bg/text qatorlarda placeholder rangi */
+html.dark :where(.placeholder\:text-\[\#8b7d6f\])::placeholder,
+html.dark :where(.placeholder\:text-\[\#6b5f52\])::placeholder {
+  color: #8a7d70 !important;
+}
+
+/* Yarim shaffof oq fonlar */
+html.dark :where([class*="bg-white/"]) {
+  background-color: rgba(42, 34, 28, 0.92) !important;
+}
+
+/* Hero/section gradient oyna ranglari */
+html.dark :where(.bg-gradient-to-b.from-white\/0),
+html.dark :where(.bg-gradient-to-t.from-white\/0) {
+  background-image: linear-gradient(
+    to bottom,
+    rgba(26, 22, 18, 0),
+    rgba(26, 22, 18, 0.9)
+  ) !important;
+}
+
+/* /auth sahifa to'q rejimni o'zgartirmasin */
+html.dark .auth-fullscreen :where(.bg-white),
+html.dark .auth-fullscreen :where(.bg-\[\#faf8f5\]),
+html.dark .auth-fullscreen :where(.bg-\[#faf8f5\]) {
+  background-color: revert !important;
+}
+html.dark .auth-fullscreen :where(.text-\[\#3d3229\]),
+html.dark .auth-fullscreen :where(.text-\[\#2a221c\]) {
+  color: revert !important;
+}
+

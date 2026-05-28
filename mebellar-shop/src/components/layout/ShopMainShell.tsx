@@ -6,6 +6,15 @@ import { cn } from "@/lib/utils";
 export function ShopMainShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isChat = pathname === "/chat" || pathname.startsWith("/chat/");
+  const isAuth = pathname === "/auth" || pathname.startsWith("/auth/");
+
+  if (isAuth) {
+    return (
+      <div className="fixed inset-0 h-[100dvh] w-screen overflow-hidden">
+        {children}
+      </div>
+    );
+  }
 
   return (
     <div

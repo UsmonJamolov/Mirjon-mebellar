@@ -29,7 +29,7 @@ function isProtectedPath(pathname: string) {
 function buildLoginUrl(req: NextRequest) {
   const callbackUrl = `${req.nextUrl.pathname}${req.nextUrl.search}`;
   const url = req.nextUrl.clone();
-  url.pathname = "/kirish";
+  url.pathname = "/auth";
   url.searchParams.set("callbackUrl", callbackUrl);
   return url;
 }

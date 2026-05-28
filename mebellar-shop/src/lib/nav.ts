@@ -4,7 +4,7 @@ export function isNavActive(href: string, pathname: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-const AUTH_ROUTES = ["/kirish", "/royxatdan-otish"] as const;
+const AUTH_ROUTES = ["/auth", "/kirish", "/royxatdan-otish"] as const;
 
 /** Login / register — pastki menyu yashiriladi */
 export function isAuthRoute(pathname: string): boolean {

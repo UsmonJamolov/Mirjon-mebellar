@@ -21,10 +21,11 @@ const navLinks = [
 export function ShopHeader() {
   const pathname = usePathname();
   const isAuth = isAuthRoute(pathname);
+  const isFullscreenAuth = pathname === "/auth" || pathname.startsWith("/auth/");
   const isProfile = pathname === "/profil" || pathname.startsWith("/profil/");
   const { data: session } = useSession();
   const user = session?.user;
-  const profileHref = user ? "/profil" : "/kirish";
+  const profileHref = user ? "/profil" : "/auth";
   const { count, hydrated } = useCart();
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -38,6 +39,10 @@ export function ShopHeader() {
       isProfile && "border-[#f4a261]/60 text-[#c97b3f]"
     );
   };
+
+  if (isFullscreenAuth) {
+    return null;
+  }
 
   if (isAuth) {
     return (

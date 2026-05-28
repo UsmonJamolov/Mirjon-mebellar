@@ -1,6 +1,7 @@
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import { connectDB } from "@/lib/mongodb";
 import { User } from "@/lib/models/User";
 import {
@@ -9,16 +10,18 @@ import {
   phoneToLoginEmail,
 } from "@/lib/phone-auth";
 import { AUTH_SECRET } from "@/lib/auth-secret";
+import { consumeOtpSession, verifyOtpCode } from "@/lib/otp-store";
 
 export const authOptions: NextAuthOptions = {
   secret: AUTH_SECRET,
   session: { strategy: "jwt", maxAge: 30 * 24 * 60 * 60 },
   pages: {
-    signIn: "/kirish",
-    error: "/kirish",
+    signIn: "/auth",
+    error: "/auth",
   },
   providers: [
     CredentialsProvider({
+      id: "credentials",
       name: "credentials",
       credentials: {
         email: { label: "Telefon yoki email", type: "text" },
@@ -51,6 +54,82 @@ export const authOptions: NextAuthOptions = {
 
         const ok = await bcrypt.compare(password, user.passwordHash);
         if (!ok) return null;
+
+        return {
+          id: user._id.toString(),
+          name: user.name,
+          email: user.email,
+          phone: user.phone ?? "",
+          image: user.image ?? "",
+          role: user.role,
+        };
+      },
+    }),
+
+    CredentialsProvider({
+      id: "telegram-otp",
+      name: "Telegram OTP",
+      credentials: {
+        token: { label: "Sessiya tokeni", type: "text" },
+        code: { label: "6 xonali kod", type: "text" },
+      },
+      async authorize(credentials) {
+        const token = String(credentials?.token ?? "").trim();
+        const code = String(credentials?.code ?? "").trim();
+        if (!token || !code) return null;
+
+        const session = await verifyOtpCode(token, code);
+        if (!session) return null;
+
+        await connectDB();
+
+        const tg = session.telegram;
+        const telegramId = tg?.id ?? "";
+        const phone = tg?.phone ? normalizePhone(tg.phone) : "";
+        const name =
+          [tg?.firstName, tg?.lastName].filter(Boolean).join(" ").trim() ||
+          (tg?.username ? `@${tg.username}` : "Mijoz");
+
+        let user = null as Awaited<ReturnType<typeof User.findOne>> | null;
+        if (telegramId) {
+          user = await User.findOne({ telegramId });
+        }
+        if (!user && phone) {
+          user = await User.findOne({ phone });
+        }
+
+        if (!user) {
+          const email = telegramId
+            ? `tg_${telegramId}@mmebel.local`
+            : phone
+              ? phoneToLoginEmail(phone)
+              : `guest_${crypto.randomBytes(6).toString("hex")}@mmebel.local`;
+          user = await User.create({
+            name,
+            email,
+            phone,
+            telegramId,
+            telegramUsername: tg?.username ?? "",
+            role: "customer",
+          });
+        } else {
+          let dirty = false;
+          if (telegramId && user.telegramId !== telegramId) {
+            user.telegramId = telegramId;
+            dirty = true;
+          }
+          if (tg?.username && user.telegramUsername !== tg.username) {
+            user.telegramUsername = tg.username;
+            dirty = true;
+          }
+          if (phone && !user.phone) {
+            user.phone = phone;
+            dirty = true;
+          }
+          if (dirty) await user.save();
+        }
+
+        await consumeOtpSession(token);
 
         return {
           id: user._id.toString(),
