@@ -8,11 +8,10 @@ import type { Product, Category } from "@/lib/types";
 import { PremiumLoader } from "@/components/premium/PremiumLoader";
 import { FuturisticCursor } from "@/components/premium/FuturisticCursor";
 import { ConfiguratorHero } from "@/components/premium/sections/ConfiguratorHero";
+import { PremiumCategories } from "@/components/premium/sections/PremiumCategories";
+import { PremiumBenefits } from "@/components/premium/sections/PremiumBenefits";
 import { PremiumShowcase } from "@/components/premium/sections/PremiumShowcase";
 import { PremiumMaterials } from "@/components/premium/sections/PremiumMaterials";
-import { PremiumCraftsmanship } from "@/components/premium/sections/PremiumCraftsmanship";
-import { PremiumGallery } from "@/components/premium/sections/PremiumGallery";
-import { PremiumArchitecture } from "@/components/premium/sections/PremiumArchitecture";
 import { PremiumCTA } from "@/components/premium/sections/PremiumCTA";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -83,11 +82,10 @@ export function PremiumHome({
       <FuturisticCursor active={!loading} />
       <main className={`bright-page ${loading ? "invisible" : ""}`}>
         <ConfiguratorHero ready={ready} />
+        <PremiumCategories categories={categories} />
+        <PremiumBenefits />
         <PremiumShowcase products={showcase} />
         <PremiumMaterials />
-        <PremiumCraftsmanship />
-        <PremiumGallery />
-        <PremiumArchitecture categories={categories} />
         <PremiumCTA />
       </main>
     </>

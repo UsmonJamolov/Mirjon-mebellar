@@ -4,7 +4,7 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "rea
 import { useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useCart } from "@/context/CartContext";
-import { estimateSketchTotal } from "@/lib/order-persistence";
+import { estimateSketchTotal } from "@/lib/order-utils";
 import { ChatDateSeparator } from "@/components/chat/ChatDateSeparator";
 import { SketchMessageCard } from "@/components/chat/SketchMessageCard";
 import { ChatAgreementBar } from "@/components/chat/ChatAgreementBar";

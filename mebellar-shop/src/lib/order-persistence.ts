@@ -1,7 +1,7 @@
 import { readFile, writeFile, mkdir } from "fs/promises";
 import path from "path";
 import type { ChatThreadState } from "./chat-types";
-import type { SketchData } from "./sketch-types";
+import { estimateSketchTotal, sketchItemName } from "./order-utils";
 
 const STORE_PATH = path.join(process.cwd(), "..", "data", "orders.json");
 
@@ -38,17 +38,6 @@ export type UserOrder = {
 
 function today() {
   return new Date().toISOString().slice(0, 10);
-}
-
-function sketchItemName(sketch?: SketchData | null) {
-  if (!sketch) return "Buyurtma (chat)";
-  return `${sketch.type} · ${sketch.length}×${sketch.width}×${sketch.height} sm`;
-}
-
-export function estimateSketchTotal(sketch?: SketchData | null) {
-  if (!sketch) return 5_000_000;
-  const vol = (sketch.length || 100) * (sketch.width || 60) * (sketch.height || 200);
-  return Math.max(1_500_000, Math.round(vol * 120));
 }
 
 async function readOrders(): Promise<StoredOrder[]> {

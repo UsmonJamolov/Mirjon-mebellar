@@ -2,6 +2,46 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Instagram, Send, Facebook, Youtube, Phone, Mail, MapPin } from "lucide-react";
+
+const sections = [
+  {
+    title: "Kompaniya",
+    items: [
+      { label: "Biz haqimizda", href: "/" },
+      { label: "Yangiliklar", href: "/" },
+      { label: "Karyera", href: "/" },
+      { label: "Aloqa", href: "/" },
+    ],
+  },
+  {
+    title: "Xizmatlar",
+    items: [
+      { label: "Yetkazib berish", href: "/" },
+      { label: "To'lov usullari", href: "/" },
+      { label: "Katalog", href: "/katalog" },
+      { label: "Qaytarish", href: "/" },
+    ],
+  },
+  {
+    title: "Yordam",
+    items: [
+      { label: "Savol-javob", href: "/" },
+      { label: "Qo'llab-quvvatlash", href: "/chat" },
+      { label: "Foydalanish shartlari", href: "/" },
+      { label: "Maxfiylik siyosati", href: "/" },
+    ],
+  },
+];
+
+const socials = [
+  { href: "https://instagram.com", icon: Instagram, label: "Instagram" },
+  { href: "https://t.me", icon: Send, label: "Telegram" },
+  { href: "https://facebook.com", icon: Facebook, label: "Facebook" },
+  { href: "https://youtube.com", icon: Youtube, label: "YouTube" },
+];
+
+const payments = ["VISA", "Mastercard", "UZCARD", "HUMO"];
 
 export function ShopFooter() {
   const pathname = usePathname();
@@ -10,48 +50,89 @@ export function ShopFooter() {
   }
 
   return (
-    <footer className="bg-[#3d3229] text-[#f5ebe0] mt-0">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+    <footer className="border-t border-[#ebe6df] bg-white">
+      <div className="mx-auto max-w-[1400px] px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+        <div className="grid gap-10 lg:grid-cols-[1.2fr_1fr_1fr_1fr_1.1fr]">
+          {/* Brand */}
           <div>
-            <div className="flex items-center gap-2 mb-4">
-              <div className="h-9 w-9 rounded-xl bg-[#f4a261] flex items-center justify-center font-bold">
+            <div className="flex items-center gap-2">
+              <div className="flex h-9 w-9 items-center justify-center rounded-[12px] bg-[#f4a261] font-bold text-white">
                 M
               </div>
-              <span className="text-lg font-bold">Mebellar</span>
+              <span className="text-lg font-bold text-[#3d3229]">Mebellar</span>
             </div>
-            <p className="text-sm text-white/60 leading-relaxed">
-              O&apos;zbekistondagi eng yaxshi mebel do&apos;koni. Sifatli va zamonaviy mebellar.
+            <p className="mt-4 max-w-xs text-sm leading-relaxed text-[#8b7d6f]">
+              Premium mebel dunyosi. Sifat, dizayn va qulaylik bir joyda.
             </p>
+            <div className="mt-5 flex items-center gap-2">
+              {socials.map(({ href, icon: Icon, label }) => (
+                <a
+                  key={label}
+                  href={href}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={label}
+                  className="flex h-9 w-9 items-center justify-center rounded-[12px] border border-[#ebe6df] text-[#6b5f52] transition hover:border-[#f4a261] hover:text-[#c97b3f]"
+                >
+                  <Icon size={16} strokeWidth={1.8} />
+                </a>
+              ))}
+            </div>
           </div>
+
+          {/* Sections */}
+          {sections.map((section) => (
+            <div key={section.title}>
+              <p className="text-sm font-semibold text-[#3d3229]">
+                {section.title}
+              </p>
+              <ul className="mt-4 space-y-2 text-sm text-[#6b5f52]">
+                {section.items.map((item) => (
+                  <li key={item.label}>
+                    <Link
+                      href={item.href}
+                      className="transition hover:text-[#c97b3f]"
+                    >
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+
+          {/* Contact */}
           <div>
-            <h4 className="font-semibold mb-4">Katalog</h4>
-            <ul className="space-y-2 text-sm text-white/60">
-              <li><Link href="/katalog?cat=oshxona" className="hover:text-[#f4a261]">Oshxona</Link></li>
-              <li><Link href="/katalog?cat=yotoqxona" className="hover:text-[#f4a261]">Yotoqxona</Link></li>
-              <li><Link href="/katalog?cat=ofis" className="hover:text-[#f4a261]">Ofis</Link></li>
-              <li><Link href="/katalog?cat=mehmonxona" className="hover:text-[#f4a261]">Mehmonxona</Link></li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-semibold mb-4">Yordam</h4>
-            <ul className="space-y-2 text-sm text-white/60">
-              <li><Link href="/buyurtmalar" className="hover:text-[#f4a261]">Buyurtmalarim</Link></li>
-              <li><Link href="/eskiz" className="hover:text-[#f4a261]">Eskiz yaratish</Link></li>
-              <li><Link href="/chat" className="hover:text-[#f4a261]">Chat</Link></li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-semibold mb-4">Aloqa</h4>
-            <ul className="space-y-2 text-sm text-white/60">
-              <li>+998 71 200 00 00</li>
-              <li>info@mebellar.uz</li>
-              <li>Toshkent sh., Chilonzor</li>
+            <p className="text-sm font-semibold text-[#3d3229]">Aloqa</p>
+            <ul className="mt-4 space-y-3 text-sm text-[#6b5f52]">
+              <li className="flex items-center gap-2">
+                <Phone size={14} className="text-[#c97b3f]" />
+                +998 90 123 45 67
+              </li>
+              <li className="flex items-center gap-2">
+                <Mail size={14} className="text-[#c97b3f]" />
+                info@mebellar.uz
+              </li>
+              <li className="flex items-center gap-2">
+                <MapPin size={14} className="text-[#c97b3f]" />
+                Toshkent, O&apos;zbekiston
+              </li>
             </ul>
           </div>
         </div>
-        <div className="border-t border-white/10 mt-10 pt-6 text-center text-sm text-white/40">
-          © 2026 Mebellar. Barcha huquqlar himoyalangan.
+
+        <div className="mt-10 flex flex-col items-center justify-between gap-4 border-t border-[#ebe6df] pt-6 text-xs text-[#8b7d6f] sm:flex-row">
+          <span>© 2026 Mebellar. Barcha huquqlar himoyalangan.</span>
+          <div className="flex flex-wrap items-center gap-2">
+            {payments.map((p) => (
+              <span
+                key={p}
+                className="rounded-md border border-[#ebe6df] bg-[#faf6ef] px-2.5 py-1 text-[10px] font-semibold tracking-[0.15em] text-[#6b5f52]"
+              >
+                {p}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
     </footer>

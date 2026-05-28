@@ -2,96 +2,202 @@
 
 import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import { Environment, Float } from "@react-three/drei";
+import { Float, RoundedBox } from "@react-three/drei";
 import * as THREE from "three";
 
-const leatherProps = {
-  color: "#1a1a1e",
-  metalness: 0.15,
-  roughness: 0.45,
-  clearcoat: 0.8,
-  clearcoatRoughness: 0.2,
-};
+export interface ChairMaterials {
+  leather: string;
+  wood: string;
+  base: string;
+}
 
-const metalProps = {
-  color: "#b8b8c0",
-  metalness: 0.95,
-  roughness: 0.15,
-};
+interface LuxuryChairProps {
+  materials: ChairMaterials;
+  /** Configurator panel rotation (radians) */
+  rotation?: { x: number; y: number; z: number };
+}
 
-function ChairModel({
-  mouse,
-}: {
-  mouse: React.MutableRefObject<{ x: number; y: number }>;
-}) {
+/**
+ * Premium Eames-style lounge chair — procedural R3F geometry.
+ * Cream leather cushions + walnut wood shells + matte-black 5-star base.
+ * Pointer parallax + Float ambient drift.
+ */
+export function LuxuryChair({ materials, rotation }: LuxuryChairProps) {
   const group = useRef<THREE.Group>(null);
 
   useFrame((state) => {
     if (!group.current) return;
-    const t = state.clock.elapsedTime;
-    group.current.rotation.y =
-      Math.sin(t * 0.25) * 0.2 + mouse.current.x * 0.35;
-    group.current.rotation.x = mouse.current.y * 0.12;
-    group.current.position.y = Math.sin(t * 0.6) * 0.06;
+    const mx = state.pointer.x;
+    const my = state.pointer.y;
+
+    const targetY = (mx * Math.PI) / 12 + (rotation?.y ?? 0);
+    const targetX = (my * Math.PI) / 18 + (rotation?.x ?? 0);
+
+    group.current.rotation.y = THREE.MathUtils.lerp(
+      group.current.rotation.y,
+      targetY,
+      0.06
+    );
+    group.current.rotation.x = THREE.MathUtils.lerp(
+      group.current.rotation.x,
+      targetX,
+      0.06
+    );
+    group.current.rotation.z = THREE.MathUtils.lerp(
+      group.current.rotation.z,
+      rotation?.z ?? 0,
+      0.06
+    );
   });
 
-  return (
-    <group ref={group} scale={1.15} position={[0, -0.35, 0]}>
-      <mesh position={[0, 0.35, 0]} castShadow receiveShadow>
-        <boxGeometry args={[1.1, 0.18, 1]} />
-        <meshPhysicalMaterial {...leatherProps} />
-      </mesh>
-      <mesh position={[0, 0.75, -0.38]} castShadow>
-        <boxGeometry args={[1.05, 0.7, 0.14]} />
-        <meshPhysicalMaterial {...leatherProps} />
-      </mesh>
-      <mesh position={[-0.58, 0.55, 0]} rotation={[0, 0, 0.15]} castShadow>
-        <boxGeometry args={[0.12, 0.5, 0.85]} />
-        <meshPhysicalMaterial {...leatherProps} />
-      </mesh>
-      <mesh position={[0.58, 0.55, 0]} rotation={[0, 0, -0.15]} castShadow>
-        <boxGeometry args={[0.12, 0.5, 0.85]} />
-        <meshPhysicalMaterial {...leatherProps} />
-      </mesh>
-      {(
-        [
-          [-0.42, 0.08, 0.38],
-          [0.42, 0.08, 0.38],
-          [-0.42, 0.08, -0.38],
-          [0.42, 0.08, -0.38],
-        ] as const
-      ).map((pos, i) => (
-        <mesh key={i} position={[...pos]} castShadow>
-          <cylinderGeometry args={[0.03, 0.025, 0.32, 16]} />
-          <meshPhysicalMaterial {...metalProps} />
-        </mesh>
-      ))}
-    </group>
+  const leather = (
+    <meshStandardMaterial
+      color={materials.leather}
+      roughness={0.55}
+      metalness={0.02}
+      envMapIntensity={0.85}
+    />
   );
-}
+  const wood = (
+    <meshStandardMaterial
+      color={materials.wood}
+      roughness={0.42}
+      metalness={0.08}
+      envMapIntensity={1.0}
+    />
+  );
+  const metal = (
+    <meshStandardMaterial
+      color={materials.base}
+      roughness={0.32}
+      metalness={0.85}
+      envMapIntensity={1.1}
+    />
+  );
 
-export function LuxuryChairScene({
-  mouse,
-}: {
-  mouse: React.MutableRefObject<{ x: number; y: number }>;
-}) {
   return (
-    <>
-      <ambientLight intensity={0.25} />
-      <spotLight
-        position={[4, 6, 4]}
-        angle={0.35}
-        penumbra={1}
-        intensity={2.5}
-        castShadow
-        color="#e8e8f0"
-      />
-      <spotLight position={[-5, 3, -2]} intensity={1.2} color="#8888aa" />
-      <pointLight position={[0, 2, 3]} intensity={0.8} color="#ffffff" />
-      <Float speed={1.2} rotationIntensity={0.1} floatIntensity={0.15}>
-        <ChairModel mouse={mouse} />
-      </Float>
-      <Environment preset="city" />
-    </>
+    <Float speed={1.4} rotationIntensity={0.25} floatIntensity={0.6}>
+      <group ref={group} position={[0, -0.1, 0]} scale={1}>
+        {/* Wood back shell */}
+        <RoundedBox
+          args={[1.55, 1.3, 0.18]}
+          radius={0.22}
+          smoothness={6}
+          position={[0, 0.45, -0.5]}
+          castShadow
+          receiveShadow
+        >
+          {wood}
+        </RoundedBox>
+
+        {/* Wood side panels (arms outer shells) */}
+        <RoundedBox
+          args={[0.18, 1.1, 0.95]}
+          radius={0.14}
+          smoothness={5}
+          position={[-0.78, 0.3, -0.05]}
+          castShadow
+        >
+          {wood}
+        </RoundedBox>
+        <RoundedBox
+          args={[0.18, 1.1, 0.95]}
+          radius={0.14}
+          smoothness={5}
+          position={[0.78, 0.3, -0.05]}
+          castShadow
+        >
+          {wood}
+        </RoundedBox>
+
+        {/* Headrest cushion */}
+        <RoundedBox
+          args={[1.3, 0.32, 0.42]}
+          radius={0.16}
+          smoothness={5}
+          position={[0, 1.05, -0.34]}
+          castShadow
+        >
+          {leather}
+        </RoundedBox>
+
+        {/* Back cushion */}
+        <RoundedBox
+          args={[1.32, 0.92, 0.36]}
+          radius={0.18}
+          smoothness={5}
+          position={[0, 0.4, -0.32]}
+          castShadow
+        >
+          {leather}
+        </RoundedBox>
+
+        {/* Seat cushion */}
+        <RoundedBox
+          args={[1.3, 0.3, 0.95]}
+          radius={0.16}
+          smoothness={5}
+          position={[0, -0.22, 0.02]}
+          castShadow
+          receiveShadow
+        >
+          {leather}
+        </RoundedBox>
+
+        {/* Armrest top cushions */}
+        <RoundedBox
+          args={[0.22, 0.12, 0.9]}
+          radius={0.06}
+          smoothness={4}
+          position={[-0.7, 0.05, 0]}
+          castShadow
+        >
+          {leather}
+        </RoundedBox>
+        <RoundedBox
+          args={[0.22, 0.12, 0.9]}
+          radius={0.06}
+          smoothness={4}
+          position={[0.7, 0.05, 0]}
+          castShadow
+        >
+          {leather}
+        </RoundedBox>
+
+        {/* Center pole */}
+        <mesh position={[0, -0.6, -0.05]} castShadow>
+          <cylinderGeometry args={[0.06, 0.07, 0.55, 28]} />
+          {metal}
+        </mesh>
+
+        {/* 5-star base */}
+        <group position={[0, -0.88, -0.05]}>
+          <mesh castShadow>
+            <cylinderGeometry args={[0.13, 0.15, 0.08, 28]} />
+            {metal}
+          </mesh>
+
+          {[0, 1, 2, 3, 4].map((i) => {
+            const angle = (i * Math.PI * 2) / 5;
+            return (
+              <group key={i} rotation={[0, angle, 0]}>
+                <mesh
+                  position={[0.45, -0.02, 0]}
+                  rotation={[0, 0, -0.05]}
+                  castShadow
+                >
+                  <boxGeometry args={[0.9, 0.05, 0.11]} />
+                  {metal}
+                </mesh>
+                <mesh position={[0.88, -0.05, 0]} castShadow>
+                  <sphereGeometry args={[0.05, 18, 18]} />
+                  {metal}
+                </mesh>
+              </group>
+            );
+          })}
+        </group>
+      </group>
+    </Float>
   );
 }

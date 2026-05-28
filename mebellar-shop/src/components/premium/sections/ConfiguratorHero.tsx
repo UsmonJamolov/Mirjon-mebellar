@@ -2,243 +2,169 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { gsap } from "gsap";
-import { LiquidShader } from "@/components/premium/LiquidShader";
-import { ConfiguratorCanvas } from "@/components/premium/ConfiguratorCanvas";
-import type {
-  ChairColor,
-  ChairConfig,
-  ChairMaterial,
-} from "@/components/premium/ArmchairModel";
+import { motion, useReducedMotion } from "framer-motion";
+import { Star } from "lucide-react";
+import { MotionStagger, MotionStaggerItem } from "@/components/motion/MotionStagger";
 
-const MATERIALS: ChairMaterial[] = [
-  "Leather",
-  "Matte fabric",
-  "Velvet",
-  "Suede",
-  "Wood",
+const TRUST_AVATARS = [
+  "https://i.pravatar.cc/64?img=14",
+  "https://i.pravatar.cc/64?img=22",
+  "https://i.pravatar.cc/64?img=33",
+  "https://i.pravatar.cc/64?img=47",
 ];
 
-const COLORS: { label: ChairColor; hex: string }[] = [
-  { label: "Black", hex: "#1a1a1a" },
-  { label: "Warm brown", hex: "#7a5237" },
-  { label: "Cream white", hex: "#f4efe6" },
-  { label: "Graphite", hex: "#2a2a2a" },
-  { label: "Luxury beige", hex: "#d9c7b2" },
-];
+const HERO_IMAGE = "/images/HSI.jpg";
 
-function clamp(v: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, v));
-}
-
-export function ConfiguratorHero({ ready }: { ready: boolean }) {
-  const sectionRef = useRef<HTMLElement>(null);
-
-  const [zoom, setZoom] = useState(0.32);
-  const [config, setConfig] = useState<ChairConfig>(() => ({
-    rotation: { x: -0.06, y: 0.45, z: 0 },
-    material: "Leather",
-    color: "Graphite",
-  }));
-
-  const rotDeg = useMemo(() => {
-    const r = config.rotation;
-    return {
-      x: Math.round((r.x * 180) / Math.PI),
-      y: Math.round((r.y * 180) / Math.PI),
-      z: Math.round((r.z * 180) / Math.PI),
-    };
-  }, [config.rotation]);
-
-  useEffect(() => {
-    if (!ready) return;
-    const ctx = gsap.context(() => {
-      gsap.from(".cfg-reveal", {
-        opacity: 0,
-        y: 22,
-        duration: 0.9,
-        stagger: 0.08,
-        ease: "power3.out",
-        delay: 0.1,
-      });
-    }, sectionRef);
-    return () => ctx.revert();
-  }, [ready]);
+export function ConfiguratorHero({ ready: _ready }: { ready: boolean }) {
+  const reduced = useReducedMotion();
+  void _ready;
 
   return (
-    <section
-      ref={sectionRef}
-      className="relative overflow-visible bg-[#faf8f5] pb-12 pt-6 sm:pb-16 sm:pt-8"
-    >
-      <div className="absolute inset-0 -z-10">
-        <Image
-          src="/images/bg1.png"
-          alt=""
-          fill
-          priority
-          className="object-cover opacity-50"
-          sizes="100vw"
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#faf8f5]/95 via-[#faf8f5]/75 to-[#faf8f5]/55" />
-      </div>
-
-      <div className="absolute inset-0 -z-10 opacity-30">
-        <LiquidShader />
-      </div>
-
+    <section className="relative overflow-hidden bg-[#faf8f5] pb-12 pt-8 sm:pb-16 sm:pt-12 lg:pt-16">
       <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
-        <div className="relative lg:grid lg:grid-cols-[1fr_300px] lg:gap-10 xl:grid-cols-[1fr_320px]">
-          {/* Hero: chair orqada, matn oldinda */}
-          <div className="relative min-h-[520px] sm:min-h-[580px] lg:min-h-[640px]">
-            {/* 3D fon — to'rtburchak chegarasiz, to'liq ko'rinish */}
-            <div className="pointer-events-auto absolute inset-0 -right-4 sm:-right-8 lg:-right-16 lg:top-4">
-              <ConfiguratorCanvas config={config} zoom={zoom} />
-            </div>
-
-            {/* Matn ustidagi yengil gradient (o'qilishi uchun) */}
-            <div
-              className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-r from-[#faf8f5]/90 via-[#faf8f5]/55 to-transparent"
-              aria-hidden
-            />
-
-            <div className="cfg-reveal relative z-10 max-w-xl pt-8 sm:pt-12 lg:pt-16 pointer-events-none">
-              <p className="text-[11px] uppercase tracking-[0.35em] text-[#6b5f52]">
+        <div className="grid gap-10 lg:grid-cols-[1fr_1.15fr] lg:items-center lg:gap-14">
+          {/* LEFT: copy + CTA + trust */}
+          <MotionStagger className="relative z-10 flex flex-col justify-center">
+            <MotionStaggerItem>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-[#6b5f52]">
                 Kelajak interyeri
               </p>
-              <h1 className="mt-4 font-display text-[clamp(2.4rem,5.5vw,4.6rem)] font-semibold leading-[0.95] text-[#3d3229]">
+            </MotionStaggerItem>
+            <MotionStaggerItem>
+              <h1 className="mt-4 font-display text-[clamp(2.8rem,6vw,5.2rem)] font-semibold leading-[0.95] text-[#3d3229]">
                 Mebel
                 <br />
                 <span className="text-[#3d3229]/45">San&apos;ati</span>
               </h1>
+            </MotionStaggerItem>
+            <MotionStaggerItem>
               <p className="mt-5 max-w-md text-sm leading-relaxed text-[#6b5f52]">
-                Ultra realistik premium konfigurator — armchair material, rang va
-                ko&apos;rinishni jonli 3D&apos;da sozlang. Stulni sichqoncha bilan
-                aylantiring.
+                Premium mebel jihozlari — har bir detali sifat va dizayn
+                uyg&apos;unligida. Uyingizga zamonaviy, qulay va elegant
+                interyer olib keling.
               </p>
-              <div className="mt-7 flex flex-wrap gap-3 pointer-events-auto">
-                <Link href="/katalog" className="btn-accent" data-cursor="grow">
-                  Kolleksiyani ko&apos;rish
-                </Link>
-                <Link href="/chat" className="btn-outline" data-cursor="grow">
-                  Maslahat olish
-                </Link>
+            </MotionStaggerItem>
+            <MotionStaggerItem>
+              <div className="mt-7 flex flex-wrap gap-3">
+                <motion.div whileTap={reduced ? undefined : { scale: 0.97 }}>
+                  <Link
+                    href="/katalog"
+                    className="inline-flex items-center gap-2 rounded-[14px] bg-[#f4a261] px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_40px_rgba(244,162,97,0.32)] transition hover:bg-[#e88b4a]"
+                  >
+                    Kolleksiyani ko&apos;rish
+                  </Link>
+                </motion.div>
+                <motion.div whileTap={reduced ? undefined : { scale: 0.97 }}>
+                  <Link
+                    href="/chat"
+                    className="inline-flex items-center gap-2 rounded-[14px] border-2 border-[#3d3229]/15 bg-white px-6 py-3 text-sm font-semibold text-[#3d3229] transition hover:bg-[#3d3229]/5"
+                  >
+                    Maslahat olish
+                  </Link>
+                </motion.div>
               </div>
-            </div>
-          </div>
-
-          {/* O'ng panel */}
-          <aside className="cfg-reveal relative z-20 mt-8 rounded-[24px] border border-[#ebe6df] bg-white/80 p-5 shadow-[0_20px_70px_rgba(61,50,41,0.1)] backdrop-blur-md lg:mt-10">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[#6b5f52]">
-              Ko&apos;rinishni boshqarish
-            </p>
-
-            <div className="mt-5 space-y-4">
-              {(
-                [
-                  { k: "x", label: "X" },
-                  { k: "y", label: "Y" },
-                  { k: "z", label: "Z" },
-                ] as const
-              ).map(({ k, label }) => (
-                <div key={k}>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-semibold uppercase tracking-[0.25em] text-[#6b5f52]">
-                      Aylantirish
-                    </span>
-                    <span className="text-[11px] font-semibold text-[#3d3229]/70">
-                      {k === "x" ? rotDeg.x : k === "y" ? rotDeg.y : rotDeg.z}°
-                    </span>
-                  </div>
-                  <div className="mt-2 flex items-center gap-3">
-                    <span className="w-3 text-[11px] font-semibold text-[#3d3229]/60">
-                      {label}
-                    </span>
-                    <input
-                      type="range"
-                      min={-180}
-                      max={180}
-                      value={k === "x" ? rotDeg.x : k === "y" ? rotDeg.y : rotDeg.z}
-                      onChange={(e) => {
-                        const deg = Number(e.target.value);
-                        setConfig((c) => ({
-                          ...c,
-                          rotation: {
-                            ...c.rotation,
-                            [k]: (deg * Math.PI) / 180,
-                          },
-                        }));
-                      }}
-                      className="w-full accent-[#f4a261]"
-                    />
-                  </div>
-                </div>
-              ))}
-
-              <div>
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-semibold uppercase tracking-[0.25em] text-[#6b5f52]">
-                    Zoom
-                  </span>
-                  <span className="text-[11px] font-semibold text-[#3d3229]/70">
-                    {Math.round(zoom * 100)}%
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min={0}
-                  max={100}
-                  value={Math.round(zoom * 100)}
-                  onChange={(e) => setZoom(clamp(Number(e.target.value) / 100, 0, 1))}
-                  className="mt-2 w-full accent-[#f4a261]"
-                />
-              </div>
-
-              <div className="pt-2">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-[#6b5f52]">
-                  Rang
-                </p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {COLORS.map((c) => (
-                    <button
-                      key={c.label}
-                      type="button"
-                      onClick={() => setConfig((s) => ({ ...s, color: c.label }))}
-                      className={`h-9 w-9 rounded-full border transition ${
-                        config.color === c.label
-                          ? "border-[#f4a261] ring-2 ring-[#f4a261]/25"
-                          : "border-[#e5dfd6]"
-                      }`}
-                      style={{ background: c.hex }}
-                      aria-label={c.label}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              <div className="pt-1">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-[#6b5f52]">
-                  Material
-                </p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {MATERIALS.map((m) => (
-                    <button
-                      key={m}
-                      type="button"
-                      onClick={() => setConfig((s) => ({ ...s, material: m }))}
-                      className={`rounded-full px-3 py-1.5 text-[11px] font-semibold transition ${
-                        config.material === m
-                          ? "bg-[#3d3229] text-white"
-                          : "bg-[#f5f0e8] text-[#6b5f52] hover:bg-[#ebe6df]"
-                      }`}
+            </MotionStaggerItem>
+            <MotionStaggerItem>
+              <div className="mt-8 flex flex-wrap items-center gap-4">
+                <div className="flex -space-x-2">
+                  {TRUST_AVATARS.map((src) => (
+                    <span
+                      key={src}
+                      className="relative h-10 w-10 overflow-hidden rounded-full border-2 border-white bg-[#f5ede1] shadow-sm"
                     >
-                      {m === "Matte fabric" ? "Mato" : m === "Leather" ? "Charm" : m}
-                    </button>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={src}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
+                    </span>
                   ))}
                 </div>
+                <div className="text-[12px] leading-tight text-[#6b5f52]">
+                  <p className="font-semibold text-[#3d3229]">
+                    500+ mijoz bizga ishonadi
+                  </p>
+                  <p className="mt-0.5 flex items-center gap-1 text-[#8b7d6f]">
+                    <Star size={13} className="fill-[#f4a261] text-[#f4a261]" />
+                    <span className="font-semibold text-[#3d3229]">4.9</span>
+                    <span>(150+ sharh)</span>
+                  </p>
+                </div>
               </div>
-            </div>
-          </aside>
+            </MotionStaggerItem>
+          </MotionStagger>
+
+          {/* RIGHT: premium furniture image */}
+          <motion.div
+            initial={reduced ? false : { opacity: 0, y: 40, scale: 0.96 }}
+            animate={reduced ? undefined : { opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
+            className="relative"
+          >
+            {/* Decorative glow behind image */}
+            <div
+              aria-hidden
+              className="pointer-events-none absolute -inset-6 -z-10 rounded-[44px] bg-gradient-to-tr from-[#f4a261]/12 via-[#f3e6d4]/40 to-transparent blur-2xl"
+            />
+
+            <motion.div
+              whileHover={reduced ? undefined : { y: -6 }}
+              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+              className="relative aspect-[5/4] w-full overflow-hidden rounded-[32px] border border-[#ebe6df] bg-white shadow-[0_40px_100px_rgba(61,50,41,0.18)]"
+            >
+              <Image
+                src={HERO_IMAGE}
+                alt="Premium mebel jihozlari"
+                fill
+                priority
+                sizes="(max-width: 1024px) 100vw, 700px"
+                className="object-cover"
+              />
+              {/* Soft top vignette for overlay readability */}
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-white/40 to-transparent"
+              />
+
+              {/* Floating stat card */}
+              <motion.div
+                className="absolute left-5 top-5 flex items-center gap-3 rounded-[16px] border border-white/40 bg-white/85 px-4 py-2.5 shadow-[0_14px_30px_rgba(61,50,41,0.18)] backdrop-blur-md"
+                animate={reduced ? undefined : { y: [0, -5, 0] }}
+                transition={
+                  reduced
+                    ? undefined
+                    : { duration: 5, repeat: Infinity, ease: "easeInOut" }
+                }
+              >
+                <span className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-[#f4a261]/15 text-[#c97b3f]">
+                  <Star size={16} strokeWidth={1.8} className="fill-[#f4a261]" />
+                </span>
+                <div className="text-[11px] leading-tight">
+                  <p className="font-semibold text-[#3d3229]">Premium sifat</p>
+                  <p className="mt-0.5 text-[#8b7d6f]">2025 yil top tanlovi</p>
+                </div>
+              </motion.div>
+
+              {/* Floating price/offer card */}
+              <motion.div
+                className="absolute bottom-5 right-5 rounded-[18px] border border-white/40 bg-white/90 px-4 py-3 shadow-[0_18px_36px_rgba(61,50,41,0.2)] backdrop-blur-md"
+                animate={reduced ? undefined : { y: [0, 6, 0] }}
+                transition={
+                  reduced
+                    ? undefined
+                    : { duration: 5.4, repeat: Infinity, ease: "easeInOut", delay: 0.6 }
+                }
+              >
+                <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-[#8b7d6f]">
+                  Yangi kolleksiya
+                </p>
+                <p className="mt-1 text-lg font-bold text-[#3d3229]">
+                  -25% chegirma
+                </p>
+              </motion.div>
+            </motion.div>
+          </motion.div>
         </div>
       </div>
     </section>
