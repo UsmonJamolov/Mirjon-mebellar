@@ -1,20 +1,64 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import {
-  orders,
   formatPrice,
   getStatusLabel,
   getStatusClass,
 } from "@/lib/mock-data";
+import { adminApi, type OrderDto } from "@/lib/api";
 
 export default function OrderDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const order = orders.find((o) => o.id === params.id) || orders[0];
+  const orderId = String(params.id ?? "");
+  const [order, setOrder] = useState<OrderDto | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    adminApi
+      .getOrder(orderId)
+      .then((data) => {
+        if (!cancelled) setOrder(data);
+      })
+      .catch(() => {
+        if (!cancelled) setOrder(null);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [orderId]);
+
+  if (loading) {
+    return (
+      <DashboardLayout title="Buyurtma" showBack onBack={() => router.back()} hideMobileNav>
+        <p className="text-center text-gray-500 py-12">Yuklanmoqda...</p>
+      </DashboardLayout>
+    );
+  }
+
+  if (!order) {
+    return (
+      <DashboardLayout title="Buyurtma" showBack onBack={() => router.back()} hideMobileNav>
+        <div className="card p-6 text-center">
+          <p className="text-gray-600">Buyurtma topilmadi</p>
+          <Link href="/buyurtmalar" className="btn-primary inline-block mt-4">
+            Buyurtmalarga qaytish
+          </Link>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  const items = order.items ?? [];
 
   return (
     <DashboardLayout
@@ -41,13 +85,7 @@ export default function OrderDetailPage() {
             </div>
             <div className="flex justify-between py-2 border-b border-gray-50">
               <dt className="text-gray-500">Telefon</dt>
-              <dd>{order.customerPhone || "+998 90 000 00 00"}</dd>
-            </div>
-            <div className="flex justify-between py-2 border-b border-gray-50">
-              <dt className="text-gray-500">Manzil</dt>
-              <dd className="text-right max-w-[60%]">
-                {order.customerAddress || "—"}
-              </dd>
+              <dd>{order.customerPhone || "—"}</dd>
             </div>
             <div className="flex justify-between py-2 items-center">
               <dt className="text-gray-500">Holat</dt>
@@ -63,20 +101,23 @@ export default function OrderDetailPage() {
         <div className="card p-6">
           <h2 className="text-lg font-semibold mb-4">Mahsulotlar</h2>
           <ul className="space-y-4">
-            {(order.products || []).map((p) => (
-              <li key={p.id} className="flex gap-4 pb-4 border-b border-gray-50 last:border-0">
-                <div className="relative h-16 w-16 shrink-0 rounded-[14px] overflow-hidden">
-                  <Image src={p.image} alt={p.name} fill className="object-cover" />
-                </div>
+            {items.map((item, idx) => (
+              <li
+                key={`${item.name}-${idx}`}
+                className="flex gap-4 pb-4 border-b border-gray-50 last:border-0"
+              >
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm">{p.name}</p>
-                  <p className="text-xs text-gray-500">{p.material}</p>
+                  <p className="font-medium text-sm">{item.name}</p>
                   <p className="text-xs text-gray-500 mt-1">
-                    Miqdor: {p.quantity} · {formatPrice(p.price)}
+                    Miqdor: {item.quantity}
+                    {item.price != null ? ` · ${formatPrice(item.price)}` : ""}
                   </p>
                 </div>
               </li>
             ))}
+            {items.length === 0 && (
+              <li className="text-sm text-gray-500">Mahsulotlar ko&apos;rsatilmagan</li>
+            )}
           </ul>
           <div className="mt-4 pt-4 border-t flex justify-between items-center">
             <span className="font-semibold">Jami summa</span>
@@ -94,9 +135,6 @@ export default function OrderDetailPage() {
         >
           Holatini o&apos;zgartirish
         </Link>
-        <button type="button" className="btn-secondary flex-1">
-          Tahrirlash
-        </button>
       </div>
       <div className="h-20 lg:hidden" />
     </DashboardLayout>

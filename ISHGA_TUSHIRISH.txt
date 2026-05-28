@@ -77,6 +77,103 @@ Ikkala loyihani ALohida terminalda ishga tushiring.
 
 
 ================================================================================
+  TELEFONDAN OCHISH — TUNNEL (Terminal 3)
+================================================================================
+
+  Telefonda saytni ko'rish uchun Cloudflare tunnel ishlatiladi.
+  (localtunnel IP parol so'raydi — ishlatmang.)
+
+  TALAB: Terminal 2 da do'kon (npm run dev) allaqachon ishlayotgan bo'lsin.
+
+--- Terminal 3 — Tunnel (do'kon, port 3001) ---
+
+    cd C:\Users\HP\Desktop\MMebellar
+    npm run tunnel:shop
+
+  Bir necha soniyadan keyin terminalda HTTPS havola chiqadi, masalan:
+    https://xxxx.trycloudflare.com
+
+  Bu oynani YOPMANG — yopilsa telefonda sayt ochilmaydi.
+
+  Tunnel yangilanganda (har safar yangi URL):
+
+    1) mebellar-shop\.env.local faylini oching
+    2) Quyidagilarni yangi URL ga almashtiring:
+         TELEGRAM_SHOP_URL=https://YANGI-URL.trycloudflare.com
+         NEXTAUTH_URL=https://YANGI-URL.trycloudflare.com
+         AUTH_URL=https://YANGI-URL.trycloudflare.com
+         AUTH_TRUST_HOST=true
+    3) Terminal 2 da do'kon serverni qayta ishga tushiring (Ctrl+C → npm run dev)
+    4) Telegram webhook (quyidagi 4-qadam)
+
+  Admin panel uchun (ixtiyoriy, Terminal 4):
+
+    cd C:\Users\HP\Desktop\MMebellar
+    npm run tunnel:admin
+    → http://localhost:3000 o'rniga chiqgan HTTPS havola
+
+
+================================================================================
+  TELEGRAM BOT (OTP + sayt tugmasi)
+================================================================================
+
+  Bot: @mmebeluz_bot (yoki .env dagi TELEGRAM_BOT_USERNAME)
+
+  TALAB:
+    • mebellar-shop\.env.local da TELEGRAM_BOT_TOKEN bo'lishi kerak
+    • Do'kon serveri (:3001) ishlayotgan bo'lishi kerak
+    • Tunnel yoqilgan bo'lsa — TELEGRAM_SHOP_URL tunnel URL ga teng
+
+--- Bot buyruqlari (Telegramda) ---
+
+    /start   — xush kelibsiz + "Do'konni ochish" tugmasi
+    /site    — do'kon havolasi
+    /auth    — kirish sahifasi
+    /help    — yordam
+
+--- 1-usul: Webhook (tavsiya — tunnel bilan) ---
+
+  Tunnel ishga tushgach va .env.local yangilangach:
+
+    cd C:\Users\HP\Desktop\MMebellar\mebellar-shop
+    npm run telegram:webhook
+
+  Javobda ok: true bo'lishi kerak.
+  Shundan keyin brauzer yopiq bo'lsa ham bot javob beradi.
+
+--- 2-usul: Polling (tunnel yo'q yoki webhook ishlamasa) ---
+
+  YANGI terminal (Terminal 5):
+
+    cd C:\Users\HP\Desktop\MMebellar\mebellar-shop
+    npm run telegram:poll
+
+  Bu oynani yopmang — bot xabarlarni shu orqali oladi.
+  Yoki do'kon sayti brauzerda ochiq bo'lsa (localhost:3001) avtomatik poll
+  ham ishlaydi.
+
+--- Kirish oqimi (mijoz) ---
+
+    1) Telefonda tunnel URL → /auth
+    2) "Telegram botga o'tish" → botga kontakt ulashish
+    3) 6 xonali kodni saytga kiritish
+
+
+================================================================================
+  TO'LIQ ISHGA TUSHIRISH TARTIBI (telefon + bot)
+================================================================================
+
+  Terminal 1:  cd MMebellar              → npm run dev          (admin :3000)
+  Terminal 2:  cd mebellar-shop          → npm run dev          (do'kon :3001)
+  Terminal 3:  cd MMebellar              → npm run tunnel:shop  (telefon URL)
+  Terminal 4:  .env.local yangilash      → TELEGRAM_SHOP_URL, NEXTAUTH_URL
+  Terminal 2:  Ctrl+C → npm run dev       (do'konni qayta ishga tushirish)
+  Terminal 5:  cd mebellar-shop          → npm run telegram:webhook
+
+  MongoDB kerak bo'lsa: start-mongodb.bat (bir marta)
+
+
+================================================================================
   DO'KON SAHIFALARI (localhost:3001)
 ================================================================================
 
@@ -156,6 +253,26 @@ Ikkala loyihani ALohida terminalda ishga tushiring.
   • Node versiyasini yangilang (20 LTS)
 
 
+--- Tunnel ishlamayapti / 502 / eski link ---
+
+  Eski trycloudflare.com havolalari vaqtincha — tunnel qayta oching:
+
+    cd C:\Users\HP\Desktop\MMebellar
+    npm run tunnel:shop
+
+  Yangi URL ni mebellar-shop\.env.local ga yozing, do'konni qayta ishga
+  tushiring, npm run telegram:webhook bajaring.
+
+
+--- Telegram bot javob bermayapti ---
+
+  • TELEGRAM_BOT_TOKEN .env.local da bormi?
+  • Do'kon :3001 ishlayaptimi?
+  • Tunnel URL .env da yangilanganmi?
+  • npm run telegram:webhook qayta ishga tushiring
+  • Yoki: npm run telegram:poll (alohida terminal, ochiq qoldiring)
+
+
 --- Faqat bitta loyiha kerak ---
 
   Faqat do'kon:
@@ -190,13 +307,18 @@ Ikkala loyihani ALohida terminalda ishga tushiring.
   QISQA ESLATMA
 ================================================================================
 
-  | Loyiha        | Papka           | Buyruq        | Port  |
-  |---------------|-----------------|---------------|-------|
-  | Admin CRM     | MMebellar       | npm run dev   | 3000  |
-  | Do'kon        | mebellar-shop   | npm run dev   | 3001  |
+  | Loyiha        | Papka           | Buyruq                 | Port  |
+  |---------------|-----------------|------------------------|-------|
+  | Admin CRM     | MMebellar       | npm run dev            | 3000  |
+  | Do'kon        | mebellar-shop   | npm run dev            | 3001  |
+  | Tunnel (shop) | MMebellar       | npm run tunnel:shop    | 3001  |
+  | Tunnel (admin)| MMebellar       | npm run tunnel:admin   | 3000  |
+  | TG webhook    | mebellar-shop   | npm run telegram:webhook | —   |
+  | TG polling    | mebellar-shop   | npm run telegram:poll  | —     |
 
   Birinchi o'rnatish: har papkada npm install
   Muammo bo'lsa do'konda: npm run dev:clean
+  Telefon: Cloudflare tunnel (IP parol yo'q), localtunnel emas
 
   Texnik vazifa (TZ): mebellar_webapp_TZ.txt
 

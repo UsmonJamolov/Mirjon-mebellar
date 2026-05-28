@@ -38,6 +38,7 @@ import { SketchPreview } from "@/components/sketch/SketchPreview";
 import { DimensionInput } from "@/components/sketch/DimensionInput";
 import { usePresenceTicker } from "@/hooks/usePresenceTicker";
 import { formatChatDayLabel, shouldShowChatDaySeparator } from "@/lib/chat-date";
+import { splitFullName } from "@/lib/chat-customer";
 
 const ROLE = "customer" as const;
 
@@ -45,13 +46,23 @@ export function ChatPageContent() {
   const searchParams = useSearchParams();
   const { data: session } = useSession();
   const { addChatOrderItem } = useCart();
-  const customerMeta = useMemo(
-    () => ({
-      customerName: session?.user?.name ?? undefined,
+  const customerMeta = useMemo(() => {
+    const full = session?.user?.name?.trim() ?? "";
+    const { firstName, lastName } = splitFullName(full);
+    return {
+      customerUserId: session?.user?.id ?? undefined,
+      customerName: full || undefined,
+      customerFirstName: firstName || undefined,
+      customerLastName: lastName || undefined,
       customerPhone: session?.user?.phone ?? undefined,
-    }),
-    [session?.user?.name, session?.user?.phone]
-  );
+      customerAvatar: session?.user?.image ?? undefined,
+    };
+  }, [
+    session?.user?.id,
+    session?.user?.name,
+    session?.user?.phone,
+    session?.user?.image,
+  ]);
   const cartSyncedRef = useRef<string | null>(null);
   const [thread, setThread] = useState<ChatThreadState | null>(null);
   const [sendError, setSendError] = useState<string | null>(null);
@@ -105,7 +116,7 @@ export function ChatPageContent() {
     const refresh = async (silent: boolean) => {
       if (document.visibilityState === "hidden") return;
       try {
-        const data = await sendCustomerHeartbeat();
+        const data = await sendCustomerHeartbeat(customerMeta);
         setThread((prev) => {
           if (!prev) return data;
           const lastPrev = prev.messages[prev.messages.length - 1]?.id;
@@ -141,7 +152,7 @@ export function ChatPageContent() {
       clearInterval(id);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [load]);
+  }, [load, customerMeta]);
 
   useEffect(() => {
     if (searchParams.get("eskiz") !== "1") return;

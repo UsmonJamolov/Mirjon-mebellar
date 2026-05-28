@@ -1,12 +1,15 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import type { Product } from "@/lib/types";
 import { ProductCard } from "@/components/product/ProductCard";
 import { MotionReveal } from "@/components/motion/MotionReveal";
 import { MotionStagger, MotionStaggerItem } from "@/components/motion/MotionStagger";
 
 export function PremiumShowcase({ products }: { products: Product[] }) {
+  const t = useTranslations("home.showcase");
+
   return (
     <section className="relative bg-[#faf8f5] py-16 sm:py-20">
       <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
@@ -14,10 +17,10 @@ export function PremiumShowcase({ products }: { products: Product[] }) {
           <MotionReveal direction="up" distance={20}>
             <div>
               <p className="text-[11px] uppercase tracking-[0.35em] text-[#6b5f52]">
-                Top tanlov
+                {t("eyebrow")}
               </p>
               <h2 className="mt-2 font-display text-2xl font-bold text-[#3d3229] sm:text-3xl">
-                Mashhur mahsulotlar
+                {t("title")}
               </h2>
             </div>
           </MotionReveal>
@@ -26,7 +29,7 @@ export function PremiumShowcase({ products }: { products: Product[] }) {
               href="/katalog"
               className="text-[11px] uppercase tracking-[0.2em] text-[#3d3229] transition hover:text-[#f4a261]"
             >
-              Barchasini ko&apos;rish →
+              {t("viewAll")}
             </Link>
           </MotionReveal>
         </div>

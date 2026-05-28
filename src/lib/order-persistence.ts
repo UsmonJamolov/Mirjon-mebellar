@@ -7,6 +7,8 @@ const STORE_PATH = path.join(process.cwd(), "data", "orders.json");
 
 export type OrderStatus = "yangi" | "jarayonda" | "tugallangan" | "bekor";
 
+const VALID_STATUSES: OrderStatus[] = ["yangi", "jarayonda", "tugallangan", "bekor"];
+
 export interface OrderItem {
   name: string;
   quantity: number;
@@ -22,6 +24,7 @@ export interface StoredOrder {
   customerName: string;
   customerPhone: string;
   customerAddress?: string;
+  paymentMethod?: string;
   items: OrderItem[];
   source: "chat" | "manual" | "shop";
   chatRound?: number | null;
@@ -149,6 +152,7 @@ export async function patchOrderStatus(
   orderNumber: string,
   status: OrderStatus
 ): Promise<OrderDto | null> {
+  if (!VALID_STATUSES.includes(status)) return null;
   const orders = await readOrders();
   const idx = orders.findIndex((o) => o.orderNumber === orderNumber);
   if (idx === -1) return null;
@@ -157,7 +161,79 @@ export async function patchOrderStatus(
   return toOrderDto(orders[idx]);
 }
 
+export async function getOrderByNumber(orderNumber: string): Promise<OrderDto | null> {
+  const orders = await readOrders();
+  const order = orders.find((o) => o.orderNumber === orderNumber);
+  return order ? toOrderDto(order) : null;
+}
+
 /** Chat kelishuvidan keyin buyurtma yaratish */
+export type ReportSummary = {
+  totalOrders: number;
+  newOrders: number;
+  totalIncome: number;
+  activeCustomers: number;
+  incomeChartData: { day: string; summa: number }[];
+  salesByCategory: { name: string; value: number; color: string }[];
+  avgCheck: number;
+};
+
+export async function buildReportSummary(): Promise<ReportSummary> {
+  const orders = await readOrders();
+  const totalOrders = orders.length;
+  const newOrders = orders.filter((o) => o.status === "yangi").length;
+  const completed = orders.filter((o) => o.status === "tugallangan");
+  const totalIncome = completed.reduce((s, o) => s + (o.total || 0), 0);
+  const customers = new Set(
+    orders.map((o) => o.customerPhone || o.customerName).filter(Boolean)
+  );
+
+  const byDay: Record<string, number> = {};
+  for (const o of orders) {
+    const d = o.date || o.createdAt.slice(0, 10);
+    const day = String(parseInt(d.split("-")[2] || "1", 10));
+    if (o.status === "tugallangan") {
+      byDay[day] = (byDay[day] || 0) + (o.total || 0);
+    }
+  }
+  let incomeChartData = Object.entries(byDay)
+    .map(([day, summa]) => ({ day, summa }))
+    .sort((a, b) => Number(a.day) - Number(b.day));
+
+  if (incomeChartData.length === 0) {
+    incomeChartData = [1, 6, 11, 16, 21, 26].map((day) => ({ day: String(day), summa: 0 }));
+  }
+
+  const catMap: Record<string, number> = {};
+  for (const o of orders) {
+    for (const item of o.items) {
+      const key = item.name.split(" ")[0] || "Boshqa";
+      catMap[key] = (catMap[key] || 0) + item.quantity;
+    }
+  }
+  const catTotal = Object.values(catMap).reduce((a, b) => a + b, 0) || 1;
+  const colors = ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6"];
+  const salesByCategory = Object.entries(catMap).map(([name, count], i) => ({
+    name,
+    value: Math.round((count / catTotal) * 100),
+    color: colors[i % colors.length],
+  }));
+
+  const avgCheck = completed.length
+    ? Math.round(totalIncome / completed.length)
+    : 0;
+
+  return {
+    totalOrders,
+    newOrders,
+    totalIncome,
+    activeCustomers: customers.size,
+    incomeChartData,
+    salesByCategory,
+    avgCheck,
+  };
+}
+
 export async function createOrderFromChat(
   thread: ChatThreadState
 ): Promise<StoredOrder | null> {

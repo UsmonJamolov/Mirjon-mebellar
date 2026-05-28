@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { RequireAuth } from "@/components/auth/RequireAuth";
 import { DimensionInput } from "@/components/sketch/DimensionInput";
 import { SketchPreview } from "@/components/sketch/SketchPreview";
 import { savePendingSketch } from "@/lib/sketch-storage";
 
-export default function SketchPage() {
+function SketchPageContent() {
   const router = useRouter();
   const [length, setLength] = useState(200);
   const [width, setWidth] = useState(60);
@@ -93,5 +94,13 @@ export default function SketchPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function SketchPage() {
+  return (
+    <RequireAuth>
+      <SketchPageContent />
+    </RequireAuth>
   );
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { PageTitle } from "@/components/ui/PageTitle";
 import { adminApi, type SettingsDto } from "@/lib/api";
@@ -23,6 +22,7 @@ export default function SettingsPage() {
   });
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
+  const [msgOk, setMsgOk] = useState(true);
 
   useEffect(() => {
     adminApi.getSettings().then(setForm).catch(() => {});
@@ -34,22 +34,14 @@ export default function SettingsPage() {
     try {
       const updated = await adminApi.saveSettings(form);
       setForm(updated);
+      setMsgOk(true);
       setMsg("Saqlandi!");
-    } catch {
-      setMsg("Saqlashda xato");
+    } catch (e) {
+      setMsgOk(false);
+      setMsg(e instanceof Error ? e.message : "Saqlashda xato");
     } finally {
       setSaving(false);
     }
-  };
-
-  const onLogo = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      setForm((f) => ({ ...f, logo: reader.result as string }));
-    };
-    reader.readAsDataURL(file);
   };
 
   return (
@@ -104,23 +96,24 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          <div className="card p-6 space-y-4">
-            <h2 className="font-semibold">Logo</h2>
-            <div className="relative aspect-square max-w-[200px] mx-auto rounded-[20px] bg-gray-100 overflow-hidden">
-              {form.logo ? (
-                <Image src={form.logo} alt="Logo" fill className="object-contain p-4" />
-              ) : (
-                <div className="flex items-center justify-center h-full text-gray-400 text-sm">Logo</div>
-              )}
+          <div className="card p-6 space-y-3 flex flex-col justify-center">
+            <h2 className="font-semibold">Brand logo</h2>
+            <p className="text-sm text-gray-500 leading-relaxed">
+              Admin va do&apos;kon headerida har doim <strong>M + Mebellar</strong> brand logosi
+              ko&apos;rinadi — u o&apos;zgarmaydi.
+            </p>
+            <div className="flex items-center gap-3 rounded-[16px] bg-[#1a2744] px-4 py-3 w-fit">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#3b82f6] font-bold text-lg text-white">
+                M
+              </div>
+              <span className="text-lg font-semibold text-white">Mebellar</span>
             </div>
-            <label className="btn-secondary w-full text-center cursor-pointer block py-2.5">
-              Logo yuklash
-              <input type="file" accept="image/*" className="hidden" onChange={onLogo} />
-            </label>
           </div>
 
           <div className="lg:col-span-3 flex justify-end items-center gap-3">
-            {msg && <span className="text-sm text-green-600">{msg}</span>}
+            {msg && (
+              <span className={`text-sm ${msgOk ? "text-green-600" : "text-red-600"}`}>{msg}</span>
+            )}
             <button type="button" onClick={save} disabled={saving} className="btn-primary px-8">
               {saving ? "Saqlanmoqda..." : "Saqlash"}
             </button>

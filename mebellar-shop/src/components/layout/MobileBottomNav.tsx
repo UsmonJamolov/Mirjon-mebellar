@@ -2,27 +2,31 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Home, Grid3X3, ShoppingCart, SquareUser, MessageCircle } from "lucide-react";
 import { useSession } from "next-auth/react";
+import { ProtectedNavLink } from "@/components/auth/ProtectedNavLink";
+import { isAuthRequiredPath } from "@/lib/auth-protected";
 import { useCart } from "@/context/CartContext";
 import { isAuthRoute, isNavActive } from "@/lib/nav";
 import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
 import { cn } from "@/lib/utils";
 
-const items = [
-  { href: "/", label: "Bosh", icon: Home, profile: false },
-  { href: "/katalog", label: "Katalog", icon: Grid3X3, profile: false },
-  { href: "/savatcha", label: "Savat", icon: ShoppingCart, badge: true, profile: false },
-  { href: "/chat", label: "Chat", icon: MessageCircle, profile: false },
-  { href: "/profil", label: "Profil", icon: SquareUser, profile: true },
-] as const;
-
 export function MobileBottomNav() {
+  const t = useTranslations("nav");
   const pathname = usePathname();
   const { count, hydrated } = useCart();
   const { data: session } = useSession();
   const user = session?.user;
   const profileHref = user ? "/profil" : "/auth";
+
+  const items = [
+    { href: "/", label: t("homeShort"), icon: Home, profile: false },
+    { href: "/katalog", label: t("catalog"), icon: Grid3X3, profile: false },
+    { href: "/savatcha", label: t("cart"), icon: ShoppingCart, badge: true, profile: false },
+    { href: "/chat", label: t("chat"), icon: MessageCircle, profile: false },
+    { href: "/profil", label: t("profile"), icon: SquareUser, profile: true },
+  ] as const;
 
   if (isAuthRoute(pathname)) {
     return null;
@@ -36,8 +40,11 @@ export function MobileBottomNav() {
         const active = isNavActive(href, pathname);
         const user = session?.user;
 
+        const NavLink =
+          !profile && isAuthRequiredPath(href) ? ProtectedNavLink : Link;
+
         return (
-          <Link
+          <NavLink
             key={href}
             href={profile ? profileHref : href}
             aria-current={active ? "page" : undefined}
@@ -64,7 +71,7 @@ export function MobileBottomNav() {
                 {count > 9 ? "9+" : count}
               </span>
             )}
-          </Link>
+          </NavLink>
         );
       })}
     </nav>

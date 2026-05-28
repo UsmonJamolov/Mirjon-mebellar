@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { useTranslations } from "next-intl";
 import { Leaf, Clock, Sparkles, Brush } from "lucide-react";
 import { MotionReveal } from "@/components/motion/MotionReveal";
 import { MotionStagger, MotionStaggerItem } from "@/components/motion/MotionStagger";
@@ -9,46 +10,48 @@ import { MotionStagger, MotionStaggerItem } from "@/components/motion/MotionStag
 const materials = [
   {
     id: "walnut",
-    name: "Yong'oq",
-    desc: "Tabiiy yog'och teksturasi, issiq chuqurlik",
+    nameKey: "walnutName" as const,
+    descKey: "walnutDesc" as const,
     base: "#5a3a23",
     accent: "rgba(220, 168, 110, 0.42)",
     swatch: "linear-gradient(135deg, #7a4a26 0%, #4a2c18 100%)",
   },
   {
     id: "marble",
-    name: "Marmar",
-    desc: "Tabiiy tosh, sovuq va bardoshli",
+    nameKey: "marbleName" as const,
+    descKey: "marbleDesc" as const,
     base: "#dad6cf",
     accent: "rgba(255, 255, 255, 0.65)",
     swatch: "linear-gradient(135deg, #f3eee6 0%, #c8c4bd 100%)",
   },
   {
     id: "leather",
-    name: "Charm",
-    desc: "Yumshoq, nafis va chiroyli",
+    nameKey: "leatherName" as const,
+    descKey: "leatherDesc" as const,
     base: "#1f1d1a",
     accent: "rgba(120, 110, 100, 0.4)",
     swatch: "linear-gradient(135deg, #2c2823 0%, #0f0d0b 100%)",
   },
   {
     id: "brass",
-    name: "Mis",
-    desc: "Metallik parlatish va zamonaviy uslub",
+    nameKey: "brassName" as const,
+    descKey: "brassDesc" as const,
     base: "#a07a44",
     accent: "rgba(255, 220, 160, 0.45)",
     swatch: "linear-gradient(135deg, #c69559 0%, #7d5a30 100%)",
   },
 ];
 
-const benefits = [
-  { icon: Leaf, title: "Ekologik toza", desc: "Tabiiy va xavfsiz materiallar" },
-  { icon: Clock, title: "Uzoq muddatli", desc: "10+ yil xizmat muddati" },
-  { icon: Sparkles, title: "Estetik dizayn", desc: "Har bir detalda go'zallik" },
-  { icon: Brush, title: "Oson tozalash", desc: "Maxsus himoyalangan qoplam" },
-];
+const featureIds = ["eco", "durable", "aesthetic", "easy"] as const;
+const featureIcons = {
+  eco: Leaf,
+  durable: Clock,
+  aesthetic: Sparkles,
+  easy: Brush,
+};
 
 export function PremiumMaterials() {
+  const t = useTranslations("home.materials");
   const reduced = useReducedMotion();
   const [activeId, setActiveId] = useState(materials[0].id);
   const active = materials.find((m) => m.id === activeId) ?? materials[0];
@@ -58,19 +61,17 @@ export function PremiumMaterials() {
       <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
         <MotionReveal direction="up" distance={22}>
           <p className="text-[11px] uppercase tracking-[0.35em] text-[#6b5f52]">
-            Interaktiv teksturalar
+            {t("eyebrow")}
           </p>
           <h2 className="mt-2 font-display text-3xl font-bold text-[#3d3229] sm:text-4xl">
-            Materialni his eting
+            {t("title")}
           </h2>
           <p className="mt-3 max-w-xl text-sm leading-relaxed text-[#6b5f52]">
-            Har bir material — uzoq umr, premium sifat va dizaynerlik
-            yondashuvi. Sichqoncha bilan tanlang.
+            {t("description")}
           </p>
         </MotionReveal>
 
         <div className="mt-10 grid gap-6 lg:grid-cols-[1fr_1.4fr_1fr] lg:items-stretch">
-          {/* Left: material list */}
           <MotionStagger className="space-y-2" amount={0.2}>
             {materials.map((m) => {
               const isActive = m.id === active.id;
@@ -94,10 +95,10 @@ export function PremiumMaterials() {
                     />
                     <span className="min-w-0 flex-1">
                       <span className="block text-sm font-semibold text-[#3d3229]">
-                        {m.name}
+                        {t(m.nameKey)}
                       </span>
                       <span className="mt-0.5 block truncate text-[11px] text-[#8b7d6f]">
-                        {m.desc}
+                        {t(m.descKey)}
                       </span>
                     </span>
                   </motion.button>
@@ -106,7 +107,6 @@ export function PremiumMaterials() {
             })}
           </MotionStagger>
 
-          {/* Center: live texture preview */}
           <MotionReveal
             direction="up"
             distance={26}
@@ -145,10 +145,10 @@ export function PremiumMaterials() {
               <div className="absolute bottom-6 left-6 right-6 flex items-end justify-between text-white">
                 <div>
                   <p className="text-[10px] uppercase tracking-[0.35em] text-white/55">
-                    Material
+                    {t("materialLabel")}
                   </p>
                   <p className="mt-1 font-display text-3xl font-semibold sm:text-4xl">
-                    {active.name}
+                    {t(active.nameKey)}
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -156,7 +156,7 @@ export function PremiumMaterials() {
                     <button
                       key={m.id}
                       type="button"
-                      aria-label={m.name}
+                      aria-label={t(m.nameKey)}
                       onClick={() => setActiveId(m.id)}
                       className={`h-9 w-9 rounded-full border-2 transition ${
                         m.id === active.id
@@ -171,31 +171,35 @@ export function PremiumMaterials() {
             </div>
           </MotionReveal>
 
-          {/* Right: benefits */}
           <div>
             <p className="text-[11px] uppercase tracking-[0.3em] text-[#6b5f52]">
-              Nima uchun premium?
+              {t("whyPremium")}
             </p>
             <MotionStagger className="mt-4 space-y-3" amount={0.2}>
-              {benefits.map(({ icon: Icon, title, desc }) => (
-                <MotionStaggerItem key={title}>
-                  <motion.div
-                    whileHover={reduced ? undefined : { y: -2 }}
-                    transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                    className="flex items-start gap-3 rounded-[16px] border border-[#ebe6df] bg-white px-4 py-3"
-                  >
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] bg-[#f4a261]/12 text-[#c97b3f]">
-                      <Icon size={16} strokeWidth={1.8} />
-                    </span>
-                    <div>
-                      <p className="text-sm font-semibold text-[#3d3229]">{title}</p>
-                      <p className="mt-0.5 text-[11px] leading-snug text-[#8b7d6f]">
-                        {desc}
-                      </p>
-                    </div>
-                  </motion.div>
-                </MotionStaggerItem>
-              ))}
+              {featureIds.map((id) => {
+                const Icon = featureIcons[id];
+                return (
+                  <MotionStaggerItem key={id}>
+                    <motion.div
+                      whileHover={reduced ? undefined : { y: -2 }}
+                      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                      className="flex items-start gap-3 rounded-[16px] border border-[#ebe6df] bg-white px-4 py-3"
+                    >
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] bg-[#f4a261]/12 text-[#c97b3f]">
+                        <Icon size={16} strokeWidth={1.8} />
+                      </span>
+                      <div>
+                        <p className="text-sm font-semibold text-[#3d3229]">
+                          {t(`${id}Title`)}
+                        </p>
+                        <p className="mt-0.5 text-[11px] leading-snug text-[#8b7d6f]">
+                          {t(`${id}Desc`)}
+                        </p>
+                      </div>
+                    </motion.div>
+                  </MotionStaggerItem>
+                );
+              })}
             </MotionStagger>
           </div>
         </div>

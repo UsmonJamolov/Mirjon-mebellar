@@ -11,7 +11,7 @@ export function AuthProvider({
   session?: Session | null;
 }) {
   return (
-    <SessionProvider session={session} refetchOnWindowFocus>
+    <SessionProvider session={session} refetchOnWindowFocus={false}>
       {children}
     </SessionProvider>
   );

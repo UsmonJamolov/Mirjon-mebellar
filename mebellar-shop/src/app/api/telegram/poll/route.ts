@@ -4,9 +4,17 @@ import {
   type TgUpdate,
 } from "@/lib/telegram-handler";
 import {
+  getShopPublicUrl,
   isTelegramConfigured,
+  registerTelegramBotCommands,
   TELEGRAM_BOT_TOKEN,
 } from "@/lib/telegram";
+
+/** Tunnel/production — webhook ishlaydi, polling webhookni o'chirmasligi kerak */
+function prefersWebhookMode() {
+  const url = getShopPublicUrl();
+  return Boolean(url?.startsWith("https://"));
+}
 import {
   getLastUpdateId,
   setLastUpdateId,
@@ -26,6 +34,7 @@ export const dynamic = "force-dynamic";
 
 let busy = false;
 let webhookCleared = false;
+let commandsRegistered = false;
 
 async function ensureNoWebhook() {
   if (webhookCleared) return;
@@ -55,6 +64,20 @@ export async function POST() {
   busy = true;
 
   try {
+    if (!commandsRegistered) {
+      await registerTelegramBotCommands();
+      commandsRegistered = true;
+    }
+
+    if (prefersWebhookMode()) {
+      return NextResponse.json({
+        ok: true,
+        mode: "webhook",
+        skipped: true,
+        shopUrl: getShopPublicUrl(),
+      });
+    }
+
     await ensureNoWebhook();
 
     const offset = (await getLastUpdateId()) + 1;

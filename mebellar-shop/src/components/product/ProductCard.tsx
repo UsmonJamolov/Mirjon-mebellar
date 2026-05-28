@@ -1,18 +1,21 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { ProductImage } from "./ProductImage";
 import { Heart, Star } from "lucide-react";
 import type { Product } from "@/lib/types";
 import { formatPrice } from "@/lib/mock-data";
 import { useCart } from "@/context/CartContext";
 import { cn } from "@/lib/utils";
+import { DynamicText } from "@/hooks/useDynamicTranslate";
 
 interface ProductCardProps {
   product: Product;
 }
 
 export function ProductCard({ product }: ProductCardProps) {
+  const t = useTranslations("common");
   const { likedIds, toggleLike, hydrated } = useCart();
   const liked = hydrated && likedIds.includes(product.id);
 
@@ -29,7 +32,7 @@ export function ProductCard({ product }: ProductCardProps) {
         />
         {product.isNew && (
           <span className="absolute top-3 left-3 rounded-full bg-[#3d3229] text-white text-[10px] font-bold px-2.5 py-1">
-            Yangi
+            {t("productNew")}
           </span>
         )}
         <button
@@ -50,7 +53,7 @@ export function ProductCard({ product }: ProductCardProps) {
       <div className="p-4 flex flex-col flex-1">
         <Link href={`/mahsulot/${product.id}`}>
           <h3 className="font-semibold text-sm line-clamp-2 hover:text-[#f4a261] transition">
-            {product.name}
+            <DynamicText text={product.name} />
           </h3>
         </Link>
         <div className="flex items-center gap-1 mt-2 text-xs text-gray-500">

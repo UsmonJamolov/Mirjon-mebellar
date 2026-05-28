@@ -38,13 +38,16 @@ export async function POST(req: Request) {
             ? "gif"
             : "jpg";
 
-    const filename = `p-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-    const dir = path.join(process.cwd(), "public", "uploads", "products");
+    const kind = String(form.get("kind") ?? "product");
+    const subdir = kind === "logo" ? "logos" : "products";
+    const prefix = kind === "logo" ? "logo" : "p";
+    const filename = `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const dir = path.join(process.cwd(), "public", "uploads", subdir);
     await mkdir(dir, { recursive: true });
     await writeFile(path.join(dir, filename), Buffer.from(bytes));
 
     const base = (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(/\/$/, "");
-    return NextResponse.json({ url: `${base}/uploads/products/${filename}` });
+    return NextResponse.json({ url: `${base}/uploads/${subdir}/${filename}` });
   } catch (e) {
     console.error(e);
     return NextResponse.json({ error: "Rasm yuklashda xato" }, { status: 500 });

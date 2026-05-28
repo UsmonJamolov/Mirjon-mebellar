@@ -3,23 +3,26 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Search, ShoppingCart, Menu, X, Heart } from "lucide-react";
 import { useSession } from "next-auth/react";
+import { ProtectedNavLink } from "@/components/auth/ProtectedNavLink";
 import { useCart } from "@/context/CartContext";
 import { BrandLogo } from "@/components/ui/BrandLogo";
 import { ProfileNavLink } from "@/components/layout/ProfileNavLink";
+import { isAuthRequiredPath } from "@/lib/auth-protected";
 import { isAuthRoute, isNavActive } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 
-const navLinks = [
-  { href: "/", label: "Bosh sahifa" },
-  { href: "/katalog", label: "Katalog" },
-  { href: "/eskiz", label: "Eskiz" },
-  { href: "/chat", label: "Chat" },
-];
-
 export function ShopHeader() {
+  const t = useTranslations("nav");
   const pathname = usePathname();
+  const navLinks = [
+    { href: "/", label: t("home") },
+    { href: "/katalog", label: t("catalog") },
+    { href: "/eskiz", label: t("sketch") },
+    { href: "/chat", label: t("chat") },
+  ];
   const isAuth = isAuthRoute(pathname);
   const isFullscreenAuth = pathname === "/auth" || pathname.startsWith("/auth/");
   const isProfile = pathname === "/profil" || pathname.startsWith("/profil/");
@@ -69,7 +72,7 @@ export function ShopHeader() {
             type="button"
             className="lg:hidden flex h-10 w-10 items-center justify-center rounded-[14px] border border-[#ebe6df] text-[#3d3229] transition hover:border-[#f4a261]/50"
             onClick={() => setMenuOpen(!menuOpen)}
-            aria-label="Menyu"
+            aria-label={t("menu")}
           >
             {menuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
@@ -82,15 +85,16 @@ export function ShopHeader() {
           <nav className="hidden lg:flex items-center gap-7 pl-4">
             {navLinks.map((l) => {
               const active = isNavActive(l.href, pathname);
+              const NavLink = isAuthRequiredPath(l.href) ? ProtectedNavLink : Link;
               return (
-                <Link
+                <NavLink
                   key={l.href}
                   href={l.href}
                   className={cn(
                     "relative text-sm font-medium transition pb-1",
                     active
                       ? "text-[#c97b3f]"
-                      : "text-[#3d3229]/70 hover:text-[#c97b3f]"
+                      : "text-[#3d3229]/70 hover:text-[#c97b3f] dark:text-[#f5f0e8]/70 dark:hover:text-[#f4a261]"
                   )}
                   aria-current={active ? "page" : undefined}
                 >
@@ -98,7 +102,7 @@ export function ShopHeader() {
                   {active && (
                     <span className="absolute -bottom-0.5 left-0 right-0 h-[2px] rounded-full bg-[#f4a261]" />
                   )}
-                </Link>
+                </NavLink>
               );
             })}
           </nav>
@@ -112,8 +116,8 @@ export function ShopHeader() {
             />
             <input
               type="search"
-              placeholder="Mebel qidirish..."
-              className="w-full rounded-full border border-[#ebe6df] bg-[#faf6ef] py-2.5 pl-11 pr-4 text-sm text-[#3d3229] placeholder:text-[#8b7d6f] outline-none transition focus:border-[#f4a261] focus:bg-white focus:ring-2 focus:ring-[#f4a261]/20 [&::-webkit-search-cancel-button]:appearance-none"
+              placeholder={t("searchPlaceholder")}
+              className="w-full rounded-full border border-[#ebe6df] bg-[#faf6ef] py-2.5 pl-11 pr-4 text-sm text-[#3d3229] placeholder:text-[#8b7d6f] outline-none transition focus:border-[#f4a261] focus:bg-white focus:ring-2 focus:ring-[#f4a261]/20 dark:focus:bg-[#2a221c] [&::-webkit-search-cancel-button]:appearance-none"
             />
           </div>
 
@@ -123,21 +127,21 @@ export function ShopHeader() {
               type="button"
               className="md:hidden flex h-10 w-10 items-center justify-center rounded-[14px] border border-[#ebe6df] text-[#3d3229] transition hover:border-[#f4a261]/50"
               onClick={() => setSearchOpen(!searchOpen)}
-              aria-label="Qidiruv"
+              aria-label={t("search")}
             >
               <Search size={18} />
             </button>
-            <Link
+            <ProtectedNavLink
               href="/sevimlilar"
               className="flex h-10 w-10 items-center justify-center rounded-[14px] border border-[#ebe6df] text-[#3d3229] transition hover:border-[#f4a261]/50"
-              aria-label="Sevimlilar"
+              aria-label={t("favorites")}
             >
               <Heart size={18} />
-            </Link>
-            <Link
+            </ProtectedNavLink>
+            <ProtectedNavLink
               href="/savatcha"
               className="relative flex h-10 w-10 items-center justify-center rounded-[14px] border border-[#ebe6df] text-[#3d3229] transition hover:border-[#f4a261]/50"
-              aria-label="Savatcha"
+              aria-label={t("cart")}
             >
               <ShoppingCart size={18} />
               {hydrated && count > 0 && (
@@ -145,7 +149,7 @@ export function ShopHeader() {
                   {count > 9 ? "9+" : count}
                 </span>
               )}
-            </Link>
+            </ProtectedNavLink>
             <ProfileNavLink
               href={profileHref}
               className={profileLinkClass()}
@@ -165,7 +169,7 @@ export function ShopHeader() {
               />
               <input
                 type="search"
-                placeholder="Mebel qidirish..."
+                placeholder={t("searchPlaceholder")}
                 className="w-full rounded-full border border-[#ebe6df] bg-white py-2.5 pl-11 pr-4 text-sm outline-none focus:border-[#f4a261] focus:ring-2 focus:ring-[#f4a261]/20"
                 autoFocus
               />
@@ -183,8 +187,9 @@ export function ShopHeader() {
           <nav className="space-y-1 p-2">
             {navLinks.map((l) => {
               const active = isNavActive(l.href, pathname);
+              const NavLink = isAuthRequiredPath(l.href) ? ProtectedNavLink : Link;
               return (
-                <Link
+                <NavLink
                   key={l.href}
                   href={l.href}
                   onClick={() => setMenuOpen(false)}
@@ -192,21 +197,21 @@ export function ShopHeader() {
                     "block rounded-[14px] px-4 py-3 text-sm font-medium transition",
                     active
                       ? "bg-[#f4a261]/12 text-[#c97b3f] font-semibold"
-                      : "text-[#3d3229] hover:bg-[#faf6ef]"
+                      : "text-[#3d3229] hover:bg-[#faf6ef] dark:text-[#f5f0e8] dark:hover:bg-[#3d3229]/50"
                   )}
                   aria-current={active ? "page" : undefined}
                 >
                   {l.label}
-                </Link>
+                </NavLink>
               );
             })}
-            <Link
+            <ProtectedNavLink
               href="/buyurtmalar"
               onClick={() => setMenuOpen(false)}
-              className="block rounded-[14px] px-4 py-3 text-sm font-medium text-[#3d3229] hover:bg-[#faf6ef]"
+              className="block rounded-[14px] px-4 py-3 text-sm font-medium text-[#3d3229] hover:bg-[#faf6ef] dark:text-[#f5f0e8] dark:hover:bg-[#3d3229]/50"
             >
-              Buyurtmalarim
-            </Link>
+              {t("orders")}
+            </ProtectedNavLink>
           </nav>
         </div>
       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Download } from "lucide-react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { PageTitle } from "@/components/ui/PageTitle";
@@ -13,27 +13,49 @@ export default function SketchPage() {
   const [width, setWidth] = useState(60);
   const [height, setHeight] = useState(220);
   const [type, setType] = useState("Shkaf");
-  const [material, setMaterial] = useState("MDF 18mm");
+  const [material, setMaterial] = useState("");
+  const [materials, setMaterials] = useState<string[]>([]);
   const [saved, setSaved] = useState(false);
   const [msg, setMsg] = useState("");
+  const [msgOk, setMsgOk] = useState(false);
+
+  useEffect(() => {
+    adminApi
+      .getInventory({ category: "Material" })
+      .then((items) => {
+        const names = items.map((i) => i.name).filter(Boolean);
+        setMaterials(names);
+        if (names.length && !material) setMaterial(names[0]);
+      })
+      .catch(() => setMaterials([]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const clear = () => {
     setLength(200);
     setWidth(60);
     setHeight(220);
     setType("Shkaf");
-    setMaterial("MDF 18mm");
+    setMaterial(materials[0] ?? "");
     setSaved(false);
     setMsg("");
+    setMsgOk(false);
   };
 
   const save = async () => {
+    if (!material.trim()) {
+      setMsgOk(false);
+      setMsg("Avval omborga material qo'shing");
+      return;
+    }
     try {
       await adminApi.saveSketch({ type, length, width, height, material });
       setSaved(true);
+      setMsgOk(true);
       setMsg("Eskiz saqlandi!");
-    } catch {
-      setMsg("Saqlashda xato");
+    } catch (e) {
+      setMsgOk(false);
+      setMsg(e instanceof Error ? e.message : "Saqlashda xato");
     }
   };
 
@@ -90,18 +112,45 @@ export default function SketchPage() {
             <input type="number" className="input-field" value={height} onChange={(e) => setHeight(Number(e.target.value))} />
           </div>
           <div>
-            <label className="text-sm font-medium mb-1 block">Material</label>
-            <input className="input-field" value={material} onChange={(e) => setMaterial(e.target.value)} />
+            <label className="text-sm font-medium mb-1 block">Material (ombordan)</label>
+            {materials.length > 0 ? (
+              <select
+                className="input-field"
+                value={material}
+                onChange={(e) => setMaterial(e.target.value)}
+              >
+                {materials.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <p className="text-sm text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
+                Omborda material yo&apos;q. Avval{" "}
+                <a href="/ombor" className="underline font-medium">
+                  Ombor
+                </a>{" "}
+                bo&apos;limiga material qo&apos;shing.
+              </p>
+            )}
           </div>
           <div className="flex gap-3 pt-2">
-            <button type="button" onClick={save} className="btn-primary flex-1">
+            <button
+              type="button"
+              onClick={save}
+              className="btn-primary flex-1"
+              disabled={!materials.length}
+            >
               Saqlash
             </button>
             <button type="button" onClick={clear} className="btn-secondary flex-1">
               Tozalash
             </button>
           </div>
-          {msg && <p className="text-sm text-green-600">{msg}</p>}
+          {msg && (
+            <p className={`text-sm ${msgOk ? "text-green-600" : "text-red-600"}`}>{msg}</p>
+          )}
           {saved && (
             <button type="button" onClick={downloadPng} className="btn-secondary w-full flex items-center justify-center gap-2">
               <Download size={18} />
@@ -113,7 +162,7 @@ export default function SketchPage() {
         <div className="card p-4 lg:p-6">
           <h2 className="font-semibold mb-4">Eskiz preview</h2>
           <SketchPreview ref={svgRef} length={length} width={width} height={height} type={type} />
-          <p className="text-center text-sm text-gray-500 mt-2">{material}</p>
+          <p className="text-center text-sm text-gray-500 mt-2">{material || "—"}</p>
         </div>
       </div>
     </DashboardLayout>

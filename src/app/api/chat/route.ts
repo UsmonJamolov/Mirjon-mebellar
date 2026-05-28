@@ -26,8 +26,13 @@ export async function POST(req: NextRequest) {
       text?: string;
       sketch?: SketchData;
       messageId?: string;
+      customerUserId?: string;
       customerName?: string;
       customerPhone?: string;
+      customerAvatar?: string;
+      customerFirstName?: string;
+      customerLastName?: string;
+      customerTelegramUsername?: string;
     };
 
     const action = body.action;
@@ -37,23 +42,44 @@ export async function POST(req: NextRequest) {
       const state = await addMessage(sender, {
         text: body.text,
         sketch: body.sketch,
+        customerUserId: body.customerUserId,
         customerName: body.customerName,
         customerPhone: body.customerPhone,
+        customerAvatar: body.customerAvatar,
+        customerFirstName: body.customerFirstName,
+        customerLastName: body.customerLastName,
+        customerTelegramUsername: body.customerTelegramUsername,
       });
       return NextResponse.json(state);
     }
 
     if (action === "agree") {
       const state = await setAgreement(sender, body.messageId, {
+        customerUserId: body.customerUserId,
         customerName: body.customerName,
         customerPhone: body.customerPhone,
+        customerAvatar: body.customerAvatar,
+        customerFirstName: body.customerFirstName,
+        customerLastName: body.customerLastName,
+        customerTelegramUsername: body.customerTelegramUsername,
       });
       return NextResponse.json(state);
     }
 
     if (action === "heartbeat") {
+      const meta = {
+        customerUserId: body.customerUserId,
+        customerName: body.customerName,
+        customerFirstName: body.customerFirstName,
+        customerLastName: body.customerLastName,
+        customerPhone: body.customerPhone,
+        customerAvatar: body.customerAvatar,
+        customerTelegramUsername: body.customerTelegramUsername,
+      };
       const state =
-        sender === "customer" ? await touchCustomerPresence() : await touchAdminPresence();
+        sender === "customer"
+          ? await touchCustomerPresence(meta)
+          : await touchAdminPresence();
       return NextResponse.json(state);
     }
 

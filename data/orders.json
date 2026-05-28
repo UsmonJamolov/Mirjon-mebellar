@@ -1,1 +1,23 @@
-[]
+[
+  {
+    "orderNumber": "12579",
+    "date": "2026-05-28",
+    "total": 12500000,
+    "status": "tugallangan",
+    "customerName": "Usmonjon Jamolov",
+    "customerPhone": "+79650015442",
+    "customerAddress": "Buxoro shahar",
+    "paymentMethod": "payme",
+    "items": [
+      {
+        "name": "Oshxona mebellari to'plami Premium",
+        "quantity": 1,
+        "productId": "1",
+        "price": 12500000
+      }
+    ],
+    "source": "shop",
+    "chatRound": null,
+    "createdAt": "2026-05-28T13:01:20.975Z"
+  }
+]

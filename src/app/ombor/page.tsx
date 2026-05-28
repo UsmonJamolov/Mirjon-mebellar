@@ -41,13 +41,17 @@ export default function WarehousePage() {
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!form.name.trim()) {
+      alert("Material nomini kiriting");
+      return;
+    }
     try {
       await adminApi.createInventory(form);
       setShowNew(false);
       setForm({ name: "", category: "Material", quantity: 0, unit: "Dona" });
       load();
-    } catch {
-      alert("Qo'shilmadi");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Qo'shilmadi");
     }
   };
 

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { SquareUser } from "lucide-react";
 import { useSession } from "next-auth/react";
+import { useTranslations } from "next-intl";
 import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
 import { cn } from "@/lib/utils";
 
@@ -21,6 +22,7 @@ export function ProfileNavLink({
   iconSize = 20,
   onHome = false,
 }: ProfileNavLinkProps) {
+  const t = useTranslations("profile");
   const { data: session, status } = useSession();
   const user = session?.user;
   const isAuthed = Boolean(user?.id || user?.name);
@@ -29,7 +31,7 @@ export function ProfileNavLink({
     <Link
       href={href}
       className={className}
-      aria-label={isAuthed ? "Profil" : "Kirish"}
+      aria-label={isAuthed ? t("profileLabel") : t("loginAria")}
       aria-current={active ? "page" : undefined}
     >
       {isAuthed ? (

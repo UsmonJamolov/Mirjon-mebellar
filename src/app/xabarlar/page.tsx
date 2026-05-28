@@ -16,10 +16,10 @@ import { createInitialDemoThreads } from "./demo-threads";
 import { formatCustomerPresence } from "@/lib/chat-rules";
 import { usePresenceTicker } from "@/hooks/usePresenceTicker";
 import { Trash2 } from "lucide-react";
+import { ChatAvatar } from "@/components/chat/ChatAvatar";
+import { CustomerProfileModal } from "@/components/chat/CustomerProfileModal";
+import { formatCustomerDisplayName } from "@/lib/chat-customer";
 import { cn } from "@/lib/utils";
-
-const DEFAULT_AVATAR =
-  "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=80&h=80&fit=crop";
 
 export default function MessagesPage() {
   const [selectedId, setSelectedId] = useState("main");
@@ -28,6 +28,7 @@ export default function MessagesPage() {
   const [listItems, setListItems] = useState<ThreadListItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [mobileShowChat, setMobileShowChat] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   usePresenceTicker(5000);
 
   const refreshLive = useCallback(async () => {
@@ -45,23 +46,33 @@ export default function MessagesPage() {
   const loadThreads = useCallback(async () => {
     try {
       const apiThreads = await adminApi.getChatThreads();
-      setListItems(
-        apiThreads.map((t) => ({
-          ...t,
-          avatar: DEFAULT_AVATAR,
-        }))
-      );
+      setListItems(apiThreads);
     } catch {
+      if (liveThread?.cleared) {
+        setListItems([]);
+        return;
+      }
       const last = liveThread?.messages[liveThread.messages.length - 1];
       if (liveThread) {
         setListItems([
           {
             id: "main",
-            customerName: liveThread.customerName,
-            avatar: DEFAULT_AVATAR,
+            customerName:
+              [liveThread.customerFirstName, liveThread.customerLastName]
+                .filter(Boolean)
+                .join(" ")
+                .trim() ||
+              liveThread.customerName?.trim() ||
+              "Mijoz",
+            customerFirstName: liveThread.customerFirstName ?? "",
+            customerLastName: liveThread.customerLastName ?? "",
+            customerPhone: liveThread.customerPhone ?? "",
+            customerAvatar: liveThread.customerAvatar ?? "",
+            customerTelegramUsername: liveThread.customerTelegramUsername ?? "",
             lastMessage: last?.text ?? "Chat",
             time: last ? formatMessageTime(last.createdAt) : "hozir",
             isLive: true,
+            status: liveThread.status,
           },
         ]);
       }
@@ -81,6 +92,12 @@ export default function MessagesPage() {
   }, [loadThreads, liveThread?.messages.length]);
 
   const handleDelete = async (threadId: string) => {
+    const label =
+      threadId === "main"
+        ? "Mijoz chatini tozalashni tasdiqlaysizmi? Xabarlar o'chadi va ro'yxatdan yashirinadi."
+        : "Bu chatni o'chirishni tasdiqlaysizmi?";
+    if (!window.confirm(label)) return;
+
     try {
       if (threadId === "main") {
         const result = await deleteChatThread("main");
@@ -89,6 +106,9 @@ export default function MessagesPage() {
         } else {
           await refreshLive();
         }
+        setListItems([]);
+        setSelectedId("main");
+        setMobileShowChat(false);
       } else {
         await adminApi.deleteChatThread(threadId);
         setDemoThreads((prev) => {
@@ -98,15 +118,45 @@ export default function MessagesPage() {
         });
         if (selectedId === threadId) setSelectedId("main");
       }
-      loadThreads();
+      await loadThreads();
     } catch (e) {
       alert(e instanceof Error ? e.message : "O'chirib bo'lmadi");
     }
   };
 
-  const selectedName = listItems.find((t) => t.id === selectedId)?.customerName ?? "Mijoz";
+  const selectedItem = listItems.find((t) => t.id === selectedId);
+  const resolveThreadName = (
+    firstName?: string,
+    lastName?: string,
+    legacyName?: string
+  ) => {
+    const fromParts = formatCustomerDisplayName(firstName, lastName, "");
+    if (fromParts) return fromParts;
+    const legacy = legacyName?.trim();
+    if (legacy && legacy !== "Mijoz") return legacy;
+    return "Mijoz";
+  };
+
+  const selectedName = selectedItem
+    ? resolveThreadName(
+        selectedItem.customerFirstName,
+        selectedItem.customerLastName,
+        selectedItem.customerName
+      )
+    : liveThread?.cleared
+      ? ""
+      : resolveThreadName(
+          liveThread?.customerFirstName,
+          liveThread?.customerLastName,
+          liveThread?.customerName
+        );
   const isLiveChat = selectedId === "main";
-  const activeThread = isLiveChat ? liveThread : demoThreads[selectedId] ?? null;
+  const activeThread = isLiveChat
+    ? liveThread?.cleared
+      ? null
+      : liveThread
+    : demoThreads[selectedId] ?? null;
+  const chatCleared = isLiveChat && Boolean(liveThread?.cleared);
   const customerPresence = formatCustomerPresence(
     isLiveChat ? liveThread?.customerLastSeenAt : null
   );
@@ -123,7 +173,7 @@ export default function MessagesPage() {
   return (
     <DashboardLayout title="Xabarlar" hideMobileNav>
       <div className="flex flex-col h-[calc(100dvh-6rem)] lg:h-[calc(100dvh-8rem)] overflow-hidden">
-        <div className="card flex-1 min-h-0 overflow-hidden grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px]">
+        <div className="card flex-1 min-h-0 overflow-hidden grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(280px,340px)]">
           <div
             className={cn(
               "flex flex-col min-h-0 border-r border-gray-100",
@@ -131,8 +181,8 @@ export default function MessagesPage() {
               mobileShowChat && "flex"
             )}
           >
-            <div className="p-3 lg:p-4 border-b font-semibold flex items-center justify-between shrink-0 bg-white">
-              <div className="flex items-center gap-2 min-w-0">
+            <div className="p-3 lg:p-4 border-b flex items-center justify-between shrink-0 bg-white gap-3">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
                 <button
                   type="button"
                   className="lg:hidden text-sm text-[#3b82f6] font-medium shrink-0"
@@ -140,35 +190,61 @@ export default function MessagesPage() {
                 >
                   ← Ro&apos;yxat
                 </button>
-                <span className="text-sm lg:text-base truncate">
-                  {selectedName}
-                  {isLiveChat ? (
-                    <span className={`ml-2 text-xs font-normal ${customerPresence.className}`}>
-                      ·{" "}
-                      <span
-                        className={`mr-0.5 inline-block h-1.5 w-1.5 rounded-full align-middle ${
-                          customerPresence.online ? "bg-green-500" : "bg-gray-400"
-                        }`}
-                      />
-                      {customerPresence.label}
-                    </span>
-                  ) : (
-                    <span className="ml-2 text-xs font-normal text-gray-400">· CRM</span>
-                  )}
-                </span>
+                {selectedItem && selectedName && (
+                  <button
+                    type="button"
+                    onClick={() => setProfileOpen(true)}
+                    className="flex items-center gap-3 min-w-0 flex-1 text-left rounded-xl px-1 py-0.5 -mx-1 transition hover:bg-gray-50 cursor-pointer group"
+                    title="Profilni ko'rish"
+                  >
+                    <ChatAvatar
+                      name={selectedName}
+                      imageUrl={selectedItem.customerAvatar}
+                      size="sm"
+                      online={selectedItem.isLive && customerPresence.online}
+                      className="hidden sm:flex shrink-0"
+                    />
+                    <div className="min-w-0">
+                      <span className="text-sm lg:text-base font-semibold truncate block group-hover:text-[#3390ec]">
+                        {selectedName}
+                      </span>
+                      {isLiveChat ? (
+                        <span
+                          className={`text-xs font-normal truncate block ${customerPresence.className}`}
+                        >
+                          <span
+                            className={`mr-1 inline-block h-1.5 w-1.5 rounded-full align-middle ${
+                              customerPresence.online ? "bg-green-500" : "bg-gray-400"
+                            }`}
+                          />
+                          {customerPresence.label}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-gray-400 block">CRM chat</span>
+                      )}
+                    </div>
+                  </button>
+                )}
+                {!selectedName && (
+                  <span className="text-sm lg:text-base font-semibold text-gray-500">
+                    Xabarlar
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 {isLiveChat && (
                   <span className="text-xs font-normal text-green-600">Sinxron</span>
                 )}
-                <button
-                  type="button"
-                  title={isLiveChat ? "Mijoz chatini tozalash" : "Chatni o'chirish"}
-                  onClick={() => handleDelete(selectedId)}
-                  className="rounded-lg p-1.5 text-gray-400 transition hover:bg-red-50 hover:text-red-600"
-                >
-                  <Trash2 size={18} />
-                </button>
+                {(selectedItem || !chatCleared) && (
+                  <button
+                    type="button"
+                    title={isLiveChat ? "Mijoz chatini tozalash" : "Chatni o'chirish"}
+                    onClick={() => handleDelete(selectedId)}
+                    className="rounded-lg p-1.5 text-gray-400 transition hover:bg-red-50 hover:text-red-600"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                )}
               </div>
             </div>
 
@@ -195,6 +271,14 @@ export default function MessagesPage() {
           </div>
         </div>
       </div>
+
+      <CustomerProfileModal
+        open={profileOpen}
+        onClose={() => setProfileOpen(false)}
+        phone={selectedItem?.customerPhone ?? liveThread?.customerPhone}
+        presenceLabel={customerPresence.label}
+        online={customerPresence.online}
+      />
     </DashboardLayout>
   );
 }

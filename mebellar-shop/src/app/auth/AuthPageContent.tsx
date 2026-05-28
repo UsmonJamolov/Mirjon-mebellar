@@ -98,6 +98,7 @@ export function AuthPageContent() {
     Array.from({ length: OTP_LENGTH }, () => "")
   );
   const inputsRef = useRef<Array<HTMLInputElement | null>>([]);
+  const sessionStartedRef = useRef(false);
 
   const [session, setSession] = useState<OtpStartResponse | null>(null);
   const [starting, setStarting] = useState(false);
@@ -150,6 +151,8 @@ export function AuthPageContent() {
   }, []);
 
   useEffect(() => {
+    if (sessionStartedRef.current) return;
+    sessionStartedRef.current = true;
     void startSession();
   }, [startSession]);
 
@@ -317,8 +320,17 @@ export function AuthPageContent() {
     }
   };
 
-  const botHref = session?.botUrl ?? "#";
+  const botUrl = session?.botUrl ?? "";
   const botUsername = session?.botUsername ?? "mmebeluz_bot";
+
+  const openTelegramBot = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (!botUrl) {
+      e.preventDefault();
+      return;
+    }
+    e.preventDefault();
+    window.open(botUrl, "_blank", "noopener,noreferrer");
+  };
 
   return (
     <main className="auth-fullscreen fixed inset-0 h-[100dvh] w-screen overflow-hidden text-white">
@@ -380,7 +392,7 @@ export function AuthPageContent() {
             transition={{
               y: { duration: 4, repeat: Infinity, ease: "easeInOut" },
             }}
-            className="mb-4"
+            className="mb-4 hidden sm:block"
           >
             <Link
               href="/"
@@ -398,23 +410,25 @@ export function AuthPageContent() {
 
           <motion.h1
             variants={itemVariants}
-            className="text-3xl font-bold tracking-tight sm:text-4xl"
+            className="hidden text-3xl font-bold tracking-tight sm:block sm:text-4xl"
           >
             Kirish
           </motion.h1>
           <motion.p
             variants={itemVariants}
-            className="mt-2 max-w-md text-sm text-white/75 sm:text-base"
+            className="mt-2 hidden max-w-md text-sm text-white/75 sm:block sm:text-base"
           >
             <span className="text-[#f4a261]">@{botUsername}</span> botiga o&apos;tib
             telefoningizni <span className="text-white">kontakt</span> sifatida
             ulashing — kod shu yerga keladi.
           </motion.p>
 
+          {/* OTP + Telegram — kichik ekranda bot tugmasi yuqorida */}
+          <div className="flex w-full flex-col items-center">
           {/* OTP inputs */}
           <motion.div
             variants={itemVariants}
-            className="mt-6 flex w-full justify-center gap-2 sm:gap-3"
+            className="order-2 mt-4 flex w-full justify-center gap-2 sm:order-1 sm:mt-6 sm:gap-3"
           >
             {Array.from({ length: OTP_LENGTH }).map((_, idx) => {
               const value = digits[idx] ?? "";
@@ -460,7 +474,7 @@ export function AuthPageContent() {
           </motion.div>
 
           {/* Status badges */}
-          <div className="mt-3 flex min-h-[28px] flex-col items-center gap-1">
+          <div className="order-3 mt-3 flex min-h-[28px] flex-col items-center gap-1 sm:order-2">
             {error && (
               <motion.p
                 initial={{ opacity: 0, y: -6 }}
@@ -494,7 +508,7 @@ export function AuthPageContent() {
           </div>
 
           {/* Telegram bot button */}
-          <motion.div variants={itemVariants} className="mt-5 w-full max-w-sm">
+          <motion.div variants={itemVariants} className="order-1 w-full max-w-sm sm:order-3 sm:mt-5">
             <motion.div
               whileHover={{ y: -3, scale: 1.015 }}
               whileTap={{ scale: 0.98 }}
@@ -518,13 +532,17 @@ export function AuthPageContent() {
               }}
               className="rounded-[18px]"
             >
-              <Link
-                href={botHref}
+              <a
+                href={botUrl || undefined}
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-disabled={!session}
+                onClick={openTelegramBot}
+                aria-disabled={!session || !botUrl}
                 className={[
                   "flex w-full items-center gap-3 rounded-[18px] border px-4 py-3 text-left backdrop-blur-xl transition",
+                  !session || !botUrl
+                    ? "pointer-events-none opacity-60"
+                    : "",
                   tgLinked
                     ? "border-emerald-400/40 bg-emerald-500/10 hover:border-emerald-300/60"
                     : "border-white/15 bg-white/[0.08] hover:border-[#f4a261]/60 hover:bg-white/[0.12]",
@@ -562,13 +580,13 @@ export function AuthPageContent() {
                     {!tgLinked ? " — kontaktni ulashing" : ""}
                   </span>
                 </span>
-              </Link>
+              </a>
             </motion.div>
           </motion.div>
 
           <motion.div
             variants={itemVariants}
-            className="mt-4 text-xs text-white/55 sm:text-sm"
+            className="order-4 mt-4 text-xs text-white/55 sm:order-4 sm:text-sm"
           >
             {tgLinked ? "Kodni olmadingizmi? " : "Botda kontaktni ulashganingizdan keyin "}
             <button
@@ -584,6 +602,7 @@ export function AuthPageContent() {
                   : "Qayta yuborish"}
             </button>
           </motion.div>
+          </div>
         </div>
 
         <motion.div

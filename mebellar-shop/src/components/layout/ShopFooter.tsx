@@ -2,37 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Instagram, Send, Facebook, Youtube, Phone, Mail, MapPin } from "lucide-react";
-
-const sections = [
-  {
-    title: "Kompaniya",
-    items: [
-      { label: "Biz haqimizda", href: "/" },
-      { label: "Yangiliklar", href: "/" },
-      { label: "Karyera", href: "/" },
-      { label: "Aloqa", href: "/" },
-    ],
-  },
-  {
-    title: "Xizmatlar",
-    items: [
-      { label: "Yetkazib berish", href: "/" },
-      { label: "To'lov usullari", href: "/" },
-      { label: "Katalog", href: "/katalog" },
-      { label: "Qaytarish", href: "/" },
-    ],
-  },
-  {
-    title: "Yordam",
-    items: [
-      { label: "Savol-javob", href: "/" },
-      { label: "Qo'llab-quvvatlash", href: "/chat" },
-      { label: "Foydalanish shartlari", href: "/" },
-      { label: "Maxfiylik siyosati", href: "/" },
-    ],
-  },
-];
 
 const socials = [
   { href: "https://instagram.com", icon: Instagram, label: "Instagram" },
@@ -44,7 +15,40 @@ const socials = [
 const payments = ["VISA", "Mastercard", "UZCARD", "HUMO"];
 
 export function ShopFooter() {
+  const t = useTranslations("footer");
+  const tNav = useTranslations("nav");
   const pathname = usePathname();
+
+  const sections = [
+    {
+      title: t("company"),
+      items: [
+        { label: t("about"), href: "/" },
+        { label: t("news"), href: "/" },
+        { label: t("career"), href: "/" },
+        { label: t("contact"), href: "/" },
+      ],
+    },
+    {
+      title: t("services"),
+      items: [
+        { label: t("delivery"), href: "/" },
+        { label: t("payment"), href: "/" },
+        { label: tNav("catalog"), href: "/katalog" },
+        { label: t("returns"), href: "/" },
+      ],
+    },
+    {
+      title: t("help"),
+      items: [
+        { label: t("faq"), href: "/" },
+        { label: t("support"), href: "/chat" },
+        { label: t("terms"), href: "/" },
+        { label: t("privacy"), href: "/" },
+      ],
+    },
+  ];
+
   if (pathname === "/chat" || pathname.startsWith("/chat/")) {
     return null;
   }
@@ -56,7 +60,6 @@ export function ShopFooter() {
     <footer className="border-t border-[#ebe6df] bg-white">
       <div className="mx-auto max-w-[1400px] px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
         <div className="grid gap-10 lg:grid-cols-[1.2fr_1fr_1fr_1fr_1.1fr]">
-          {/* Brand */}
           <div>
             <div className="flex items-center gap-2">
               <div className="flex h-9 w-9 items-center justify-center rounded-[12px] bg-[#f4a261] font-bold text-white">
@@ -65,7 +68,7 @@ export function ShopFooter() {
               <span className="text-lg font-bold text-[#3d3229]">Mebellar</span>
             </div>
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-[#8b7d6f]">
-              Premium mebel dunyosi. Sifat, dizayn va qulaylik bir joyda.
+              {t("tagline")}
             </p>
             <div className="mt-5 flex items-center gap-2">
               {socials.map(({ href, icon: Icon, label }) => (
@@ -83,19 +86,13 @@ export function ShopFooter() {
             </div>
           </div>
 
-          {/* Sections */}
           {sections.map((section) => (
             <div key={section.title}>
-              <p className="text-sm font-semibold text-[#3d3229]">
-                {section.title}
-              </p>
+              <p className="text-sm font-semibold text-[#3d3229]">{section.title}</p>
               <ul className="mt-4 space-y-2 text-sm text-[#6b5f52]">
                 {section.items.map((item) => (
                   <li key={item.label}>
-                    <Link
-                      href={item.href}
-                      className="transition hover:text-[#c97b3f]"
-                    >
+                    <Link href={item.href} className="transition hover:text-[#c97b3f]">
                       {item.label}
                     </Link>
                   </li>
@@ -104,9 +101,8 @@ export function ShopFooter() {
             </div>
           ))}
 
-          {/* Contact */}
           <div>
-            <p className="text-sm font-semibold text-[#3d3229]">Aloqa</p>
+            <p className="text-sm font-semibold text-[#3d3229]">{t("contact")}</p>
             <ul className="mt-4 space-y-3 text-sm text-[#6b5f52]">
               <li className="flex items-center gap-2">
                 <Phone size={14} className="text-[#c97b3f]" />
@@ -118,14 +114,14 @@ export function ShopFooter() {
               </li>
               <li className="flex items-center gap-2">
                 <MapPin size={14} className="text-[#c97b3f]" />
-                Toshkent, O&apos;zbekiston
+                {t("location")}
               </li>
             </ul>
           </div>
         </div>
 
         <div className="mt-10 flex flex-col items-center justify-between gap-4 border-t border-[#ebe6df] pt-6 text-xs text-[#8b7d6f] sm:flex-row">
-          <span>© 2026 Mebellar. Barcha huquqlar himoyalangan.</span>
+          <span>{t("copyright")}</span>
           <div className="flex flex-wrap items-center gap-2">
             {payments.map((p) => (
               <span

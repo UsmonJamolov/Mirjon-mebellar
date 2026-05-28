@@ -45,7 +45,18 @@ export default function OrdersPage() {
 
   useEffect(() => {
     load();
+    const id = window.setInterval(load, 15000);
+    return () => window.clearInterval(id);
   }, [load]);
+
+  const handleStartWork = async (orderId: string) => {
+    try {
+      await adminApi.patchOrder(orderId, { status: "jarayonda" });
+      load();
+    } catch {
+      alert("Holat yangilanmadi");
+    }
+  };
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -131,6 +142,7 @@ export default function OrdersPage() {
               <th className="px-6 py-4 font-medium">Sana</th>
               <th className="px-6 py-4 font-medium">Summa</th>
               <th className="px-6 py-4 font-medium">Holat</th>
+              <th className="px-6 py-4 font-medium">Amal</th>
             </tr>
           </thead>
           <tbody>
@@ -148,6 +160,19 @@ export default function OrdersPage() {
                   <span className={getStatusClass(o.status as OrderStatus)}>
                     {getStatusLabel(o.status as OrderStatus)}
                   </span>
+                </td>
+                <td className="px-6 py-4">
+                  {o.status === "yangi" ? (
+                    <button
+                      type="button"
+                      onClick={() => handleStartWork(o.id)}
+                      className="rounded-[10px] bg-[#3b82f6] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#2563eb]"
+                    >
+                      Ishni boshlash
+                    </button>
+                  ) : (
+                    <span className="text-xs text-gray-400">—</span>
+                  )}
                 </td>
               </tr>
             ))}

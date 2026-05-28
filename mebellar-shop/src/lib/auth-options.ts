@@ -9,12 +9,23 @@ import {
   normalizePhone,
   phoneToLoginEmail,
 } from "@/lib/phone-auth";
-import { AUTH_SECRET } from "@/lib/auth-secret";
+import {
+  AUTH_SECRET,
+  SHOP_SESSION_COOKIE_NAME,
+  shopSessionCookieOptions,
+} from "@/lib/auth-cookies";
 import { consumeOtpSession, verifyOtpCode } from "@/lib/otp-store";
 
 export const authOptions: NextAuthOptions = {
   secret: AUTH_SECRET,
+  ...(process.env.AUTH_TRUST_HOST === "true" ? { trustHost: true } : {}),
   session: { strategy: "jwt", maxAge: 30 * 24 * 60 * 60 },
+  cookies: {
+    sessionToken: {
+      name: SHOP_SESSION_COOKIE_NAME,
+      options: shopSessionCookieOptions(),
+    },
+  },
   pages: {
     signIn: "/auth",
     error: "/auth",

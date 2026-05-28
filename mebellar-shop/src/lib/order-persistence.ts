@@ -22,6 +22,7 @@ export interface StoredOrder {
   customerName: string;
   customerPhone: string;
   customerAddress?: string;
+  paymentMethod?: string;
   items: OrderItem[];
   source: "chat" | "manual" | "shop";
   chatRound?: number | null;
@@ -33,6 +34,7 @@ export type UserOrder = {
   date: string;
   total: number;
   status: string;
+  source: StoredOrder["source"];
   items: { name: string; quantity: number }[];
 };
 
@@ -68,18 +70,43 @@ function toUserOrder(o: StoredOrder): UserOrder {
     date: o.date,
     total: o.total,
     status: o.status,
+    source: o.source,
     items: o.items.map((i) => ({ name: i.name, quantity: i.quantity })),
   };
 }
 
+function phoneKey(raw: string): string {
+  return raw.replace(/\D/g, "");
+}
+
 export async function listOrdersForCustomer(phone: string): Promise<UserOrder[]> {
-  if (!phone.trim()) return [];
-  const p = phone.replace(/\D/g, "");
+  const p = phoneKey(phone);
+  if (!p) return [];
   const orders = await readOrders();
   return orders
-    .filter((o) => o.customerPhone.replace(/\D/g, "") === p)
+    .filter((o) => phoneKey(o.customerPhone) === p)
     .sort((a, b) => (b.createdAt > a.createdAt ? 1 : -1))
     .map(toUserOrder);
+}
+
+export async function getOrderForCustomer(
+  phone: string,
+  orderNumber: string
+): Promise<
+  (UserOrder & { customerAddress?: string; paymentMethod?: string }) | null
+> {
+  const p = phoneKey(phone);
+  if (!p || !orderNumber) return null;
+  const orders = await readOrders();
+  const o = orders.find(
+    (x) => x.orderNumber === orderNumber && phoneKey(x.customerPhone) === p
+  );
+  if (!o) return null;
+  return {
+    ...toUserOrder(o),
+    customerAddress: o.customerAddress,
+    paymentMethod: o.paymentMethod,
+  };
 }
 
 export async function createOrderFromChat(
@@ -125,4 +152,41 @@ export async function createOrderFromChat(
   orders.push(order);
   await writeOrders(orders);
   return order;
+}
+
+/** Do'kon checkout — savatdan buyurtma yaratish (admin panelga tushadi) */
+export async function createOrderFromShop(input: {
+  customerName: string;
+  customerPhone: string;
+  customerAddress: string;
+  paymentMethod?: string;
+  items: OrderItem[];
+  total: number;
+}): Promise<UserOrder> {
+  const orders = await readOrders();
+  const orderNumber = await nextOrderNumber(orders);
+
+  const order: StoredOrder = {
+    orderNumber,
+    date: today(),
+    total: input.total,
+    status: "yangi",
+    customerName: input.customerName.trim() || "Mijoz",
+    customerPhone: input.customerPhone.trim(),
+    customerAddress: input.customerAddress.trim(),
+    paymentMethod: input.paymentMethod,
+    items: input.items.map((i) => ({
+      name: i.name,
+      quantity: i.quantity,
+      productId: i.productId,
+      price: i.price,
+    })),
+    source: "shop",
+    chatRound: null,
+    createdAt: new Date().toISOString(),
+  };
+
+  orders.push(order);
+  await writeOrders(orders);
+  return toUserOrder(order);
 }

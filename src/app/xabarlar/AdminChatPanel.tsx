@@ -121,12 +121,13 @@ export function AdminChatPanel({
 
   if (!thread) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center p-8 gap-3">
-        <p className="text-sm text-gray-500 text-center">
-          Chat yuklanmoqda... Shop (3001) va admin (3000) ishlayotganini tekshiring.
+      <div className="flex-1 flex flex-col items-center justify-center p-8 gap-3 text-center">
+        <p className="text-sm text-gray-600 font-medium">Chat tozalandi</p>
+        <p className="text-sm text-gray-500 max-w-xs">
+          Mijoz yangi xabar yozganda shu yerda ko&apos;rinadi. O&apos;ng tomondan mijozni tanlang.
         </p>
-        <button type="button" onClick={onRefresh} className="btn-primary text-xs py-2 px-4">
-          Qayta urinish
+        <button type="button" onClick={onRefresh} className="btn-secondary text-xs py-2 px-4">
+          Yangilash
         </button>
       </div>
     );

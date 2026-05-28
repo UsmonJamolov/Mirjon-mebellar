@@ -3,9 +3,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
+import { useTranslations } from "next-intl";
 import { MotionReveal } from "@/components/motion/MotionReveal";
 
 export function PremiumCTA() {
+  const t = useTranslations("home.cta");
   const reduced = useReducedMotion();
 
   return (
@@ -17,7 +19,6 @@ export function PremiumCTA() {
             transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
             className="relative overflow-hidden rounded-[28px] bg-gradient-to-r from-[#2c241d] via-[#3d3229] to-[#5b4a3a] shadow-[0_40px_100px_rgba(61,50,41,0.35)]"
           >
-            {/* Background image */}
             <div className="absolute inset-0">
               <Image
                 src="/images/products/1.jpg"
@@ -29,7 +30,6 @@ export function PremiumCTA() {
               <div className="absolute inset-0 bg-gradient-to-r from-[#2c241d] via-[#3d3229]/85 to-transparent" />
             </div>
 
-            {/* Ambient light */}
             {!reduced ? (
               <motion.div
                 aria-hidden
@@ -42,14 +42,13 @@ export function PremiumCTA() {
             <div className="relative grid gap-6 px-6 py-10 sm:grid-cols-[1.4fr_1fr] sm:items-center sm:px-12 sm:py-14 lg:px-16 lg:py-16">
               <div>
                 <p className="text-[11px] uppercase tracking-[0.35em] text-white/55">
-                  Boshlash
+                  {t("eyebrow")}
                 </p>
                 <h2 className="mt-3 font-display text-2xl font-bold text-white sm:text-3xl lg:text-4xl">
-                  Interyeringizni yangilang
+                  {t("title")}
                 </h2>
                 <p className="mt-3 max-w-md text-sm leading-relaxed text-white/65">
-                  Sifat, uslub va qulaylikni bir joyda toping. Chat orqali
-                  maslahat, eskiz yoki kolleksiyadan tanlash.
+                  {t("description")}
                 </p>
                 <div className="mt-7 flex flex-wrap gap-3">
                   <motion.div whileTap={reduced ? undefined : { scale: 0.97 }}>
@@ -57,7 +56,7 @@ export function PremiumCTA() {
                       href="/katalog"
                       className="inline-flex items-center gap-2 rounded-[14px] bg-[#f4a261] px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_40px_rgba(244,162,97,0.4)] transition hover:bg-[#e88b4a]"
                     >
-                      Kolleksiyani ko&apos;rish
+                      {t("viewCollection")}
                     </Link>
                   </motion.div>
                   <motion.div whileTap={reduced ? undefined : { scale: 0.97 }}>
@@ -65,7 +64,7 @@ export function PremiumCTA() {
                       href="/chat"
                       className="inline-flex items-center gap-2 rounded-[14px] border border-white/30 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
                     >
-                      Chat boshlash
+                      {t("startChat")}
                     </Link>
                   </motion.div>
                 </div>
@@ -83,7 +82,7 @@ export function PremiumCTA() {
                 >
                   <Image
                     src="/images/products/2.jpg"
-                    alt="Premium mebel"
+                    alt={t("imageAlt")}
                     fill
                     sizes="(max-width: 1024px) 50vw, 360px"
                     className="object-cover"

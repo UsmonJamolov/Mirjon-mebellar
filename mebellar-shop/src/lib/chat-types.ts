@@ -26,7 +26,12 @@ export interface ActiveSketch {
 export interface ChatThreadState {
   threadId: string;
   customerName: string;
+  customerUserId?: string;
+  customerFirstName?: string;
+  customerLastName?: string;
   customerPhone?: string;
+  customerAvatar?: string;
+  customerTelegramUsername?: string;
   status: ChatOrderStatus;
   customerAgreed: boolean;
   adminAgreed: boolean;
@@ -37,6 +42,7 @@ export interface ChatThreadState {
   adminLastSeenAt?: string | null;
   customerLastSeenAt?: string | null;
   orderRound?: number;
+  cleared?: boolean;
 }
 
 export function getLatestSketchMessageId(messages: ChatMessage[]): string | null {

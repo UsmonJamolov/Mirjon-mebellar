@@ -29,8 +29,13 @@ export async function sendChatMessage(
   payload: {
     text?: string;
     sketch?: SketchData;
+    customerUserId?: string;
     customerName?: string;
     customerPhone?: string;
+    customerAvatar?: string;
+    customerFirstName?: string;
+    customerLastName?: string;
+    customerTelegramUsername?: string;
   }
 ): Promise<ChatThreadState> {
   const res = await fetch(getChatApiBase(), {
@@ -56,7 +61,15 @@ export async function updateChatSketch(
 export async function agreeToStartWork(
   sender: ChatSender,
   messageId?: string,
-  customer?: { customerName?: string; customerPhone?: string }
+  customer?: {
+    customerUserId?: string;
+    customerName?: string;
+    customerPhone?: string;
+    customerAvatar?: string;
+    customerFirstName?: string;
+    customerLastName?: string;
+    customerTelegramUsername?: string;
+  }
 ): Promise<ChatThreadState> {
   const res = await fetch(getChatApiBase(), {
     method: "POST",
@@ -65,18 +78,33 @@ export async function agreeToStartWork(
       action: "agree",
       sender,
       messageId,
+      customerUserId: customer?.customerUserId,
       customerName: customer?.customerName,
       customerPhone: customer?.customerPhone,
+      customerAvatar: customer?.customerAvatar,
+      customerFirstName: customer?.customerFirstName,
+      customerLastName: customer?.customerLastName,
+      customerTelegramUsername: customer?.customerTelegramUsername,
     }),
   });
   return parse(res);
 }
 
-export async function sendChatHeartbeat(sender: ChatSender): Promise<ChatThreadState> {
+export async function sendChatHeartbeat(
+  sender: ChatSender,
+  meta?: {
+    customerName?: string;
+    customerFirstName?: string;
+    customerLastName?: string;
+    customerPhone?: string;
+    customerAvatar?: string;
+    customerTelegramUsername?: string;
+  }
+): Promise<ChatThreadState> {
   const res = await fetch(getChatApiBase(), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ action: "heartbeat", sender }),
+    body: JSON.stringify({ action: "heartbeat", sender, ...meta }),
   });
   return parse(res);
 }
@@ -85,8 +113,17 @@ export async function sendAdminHeartbeat(): Promise<ChatThreadState> {
   return sendChatHeartbeat("admin");
 }
 
-export async function sendCustomerHeartbeat(): Promise<ChatThreadState> {
-  return sendChatHeartbeat("customer");
+export async function sendCustomerHeartbeat(
+  meta?: {
+    customerName?: string;
+    customerFirstName?: string;
+    customerLastName?: string;
+    customerPhone?: string;
+    customerAvatar?: string;
+    customerTelegramUsername?: string;
+  }
+): Promise<ChatThreadState> {
+  return sendChatHeartbeat("customer", meta);
 }
 
 export async function cancelChatAgreement(): Promise<ChatThreadState> {

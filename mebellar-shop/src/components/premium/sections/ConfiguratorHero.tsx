@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
+import { useTranslations } from "next-intl";
 import { Star } from "lucide-react";
 import { MotionStagger, MotionStaggerItem } from "@/components/motion/MotionStagger";
 
@@ -16,6 +17,7 @@ const TRUST_AVATARS = [
 const HERO_IMAGE = "/images/HSI.jpg";
 
 export function ConfiguratorHero({ ready: _ready }: { ready: boolean }) {
+  const t = useTranslations("home.hero");
   const reduced = useReducedMotion();
   void _ready;
 
@@ -23,25 +25,22 @@ export function ConfiguratorHero({ ready: _ready }: { ready: boolean }) {
     <section className="relative overflow-hidden bg-[#faf8f5] pb-12 pt-8 sm:pb-16 sm:pt-12 lg:pt-16">
       <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
         <div className="grid gap-10 lg:grid-cols-[1fr_1.15fr] lg:items-center lg:gap-14">
-          {/* LEFT: copy + CTA + trust */}
           <MotionStagger className="relative z-10 flex flex-col justify-center">
             <MotionStaggerItem>
               <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-[#6b5f52]">
-                Kelajak interyeri
+                {t("eyebrow")}
               </p>
             </MotionStaggerItem>
             <MotionStaggerItem>
               <h1 className="mt-4 font-display text-[clamp(2.8rem,6vw,5.2rem)] font-semibold leading-[0.95] text-[#3d3229]">
-                Mebel
+                {t("titleLine1")}
                 <br />
-                <span className="text-[#3d3229]/45">San&apos;ati</span>
+                <span className="text-[#3d3229]/45">{t("titleLine2")}</span>
               </h1>
             </MotionStaggerItem>
             <MotionStaggerItem>
               <p className="mt-5 max-w-md text-sm leading-relaxed text-[#6b5f52]">
-                Premium mebel jihozlari — har bir detali sifat va dizayn
-                uyg&apos;unligida. Uyingizga zamonaviy, qulay va elegant
-                interyer olib keling.
+                {t("description")}
               </p>
             </MotionStaggerItem>
             <MotionStaggerItem>
@@ -51,7 +50,7 @@ export function ConfiguratorHero({ ready: _ready }: { ready: boolean }) {
                     href="/katalog"
                     className="inline-flex items-center gap-2 rounded-[14px] bg-[#f4a261] px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_40px_rgba(244,162,97,0.32)] transition hover:bg-[#e88b4a]"
                   >
-                    Kolleksiyani ko&apos;rish
+                    {t("viewCollection")}
                   </Link>
                 </motion.div>
                 <motion.div whileTap={reduced ? undefined : { scale: 0.97 }}>
@@ -59,7 +58,7 @@ export function ConfiguratorHero({ ready: _ready }: { ready: boolean }) {
                     href="/chat"
                     className="inline-flex items-center gap-2 rounded-[14px] border-2 border-[#3d3229]/15 bg-white px-6 py-3 text-sm font-semibold text-[#3d3229] transition hover:bg-[#3d3229]/5"
                   >
-                    Maslahat olish
+                    {t("getAdvice")}
                   </Link>
                 </motion.div>
               </div>
@@ -82,27 +81,23 @@ export function ConfiguratorHero({ ready: _ready }: { ready: boolean }) {
                   ))}
                 </div>
                 <div className="text-[12px] leading-tight text-[#6b5f52]">
-                  <p className="font-semibold text-[#3d3229]">
-                    500+ mijoz bizga ishonadi
-                  </p>
+                  <p className="font-semibold text-[#3d3229]">{t("trustCount")}</p>
                   <p className="mt-0.5 flex items-center gap-1 text-[#8b7d6f]">
                     <Star size={13} className="fill-[#f4a261] text-[#f4a261]" />
                     <span className="font-semibold text-[#3d3229]">4.9</span>
-                    <span>(150+ sharh)</span>
+                    <span>{t("reviews")}</span>
                   </p>
                 </div>
               </div>
             </MotionStaggerItem>
           </MotionStagger>
 
-          {/* RIGHT: premium furniture image */}
           <motion.div
             initial={reduced ? false : { opacity: 0, y: 40, scale: 0.96 }}
             animate={reduced ? undefined : { opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
             className="relative"
           >
-            {/* Decorative glow behind image */}
             <div
               aria-hidden
               className="pointer-events-none absolute -inset-6 -z-10 rounded-[44px] bg-gradient-to-tr from-[#f4a261]/12 via-[#f3e6d4]/40 to-transparent blur-2xl"
@@ -115,19 +110,17 @@ export function ConfiguratorHero({ ready: _ready }: { ready: boolean }) {
             >
               <Image
                 src={HERO_IMAGE}
-                alt="Premium mebel jihozlari"
+                alt={t("imageAlt")}
                 fill
                 priority
                 sizes="(max-width: 1024px) 100vw, 700px"
                 className="object-cover"
               />
-              {/* Soft top vignette for overlay readability */}
               <div
                 aria-hidden
                 className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-white/40 to-transparent"
               />
 
-              {/* Floating stat card */}
               <motion.div
                 className="absolute left-5 top-5 flex items-center gap-3 rounded-[16px] border border-white/40 bg-white/85 px-4 py-2.5 shadow-[0_14px_30px_rgba(61,50,41,0.18)] backdrop-blur-md"
                 animate={reduced ? undefined : { y: [0, -5, 0] }}
@@ -141,12 +134,11 @@ export function ConfiguratorHero({ ready: _ready }: { ready: boolean }) {
                   <Star size={16} strokeWidth={1.8} className="fill-[#f4a261]" />
                 </span>
                 <div className="text-[11px] leading-tight">
-                  <p className="font-semibold text-[#3d3229]">Premium sifat</p>
-                  <p className="mt-0.5 text-[#8b7d6f]">2025 yil top tanlovi</p>
+                  <p className="font-semibold text-[#3d3229]">{t("badgeTitle")}</p>
+                  <p className="mt-0.5 text-[#8b7d6f]">{t("badgeSub")}</p>
                 </div>
               </motion.div>
 
-              {/* Floating price/offer card */}
               <motion.div
                 className="absolute bottom-5 right-5 rounded-[18px] border border-white/40 bg-white/90 px-4 py-3 shadow-[0_18px_36px_rgba(61,50,41,0.2)] backdrop-blur-md"
                 animate={reduced ? undefined : { y: [0, 6, 0] }}
@@ -157,11 +149,9 @@ export function ConfiguratorHero({ ready: _ready }: { ready: boolean }) {
                 }
               >
                 <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-[#8b7d6f]">
-                  Yangi kolleksiya
+                  {t("offerLabel")}
                 </p>
-                <p className="mt-1 text-lg font-bold text-[#3d3229]">
-                  -25% chegirma
-                </p>
+                <p className="mt-1 text-lg font-bold text-[#3d3229]">{t("offerDiscount")}</p>
               </motion.div>
             </motion.div>
           </motion.div>

@@ -18,6 +18,7 @@ const productSchema = new mongoose.Schema(
     isNew: Boolean,
     isPopular: Boolean,
     isRecommended: Boolean,
+    hideFromPopular: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
@@ -40,6 +41,7 @@ export function toProductDto(doc) {
     isNew: doc.isNew,
     isPopular: doc.isPopular,
     isRecommended: doc.isRecommended,
+    hideFromPopular: doc.hideFromPopular ?? false,
   };
 }
 

@@ -16,11 +16,13 @@ import {
 import { formatPrice } from "@/lib/mock-data";
 import type { Product } from "@/lib/types";
 import { useCart } from "@/context/CartContext";
+import { useAuthAction } from "@/hooks/useRequireAuth";
 import { cn } from "@/lib/utils";
 
 export function ProductDetail({ product }: { product: Product }) {
   const router = useRouter();
   const { addItem } = useCart();
+  const { runAuthAction } = useAuthAction();
   const [activeImage, setActiveImage] = useState(0);
   const [qty, setQty] = useState(1);
 
@@ -34,8 +36,10 @@ export function ProductDetail({ product }: { product: Product }) {
   };
 
   const handleOrder = () => {
-    addItem(product, qty);
-    router.push("/checkout");
+    runAuthAction(() => {
+      addItem(product, qty);
+      router.push("/checkout");
+    }, "/checkout");
   };
 
   return (

@@ -37,8 +37,8 @@ export default function CustomersPage() {
     try {
       await adminApi.deleteCustomer(c.id);
       await load();
-    } catch {
-      alert("O'chirib bo'lmadi");
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "O'chirib bo'lmadi");
     } finally {
       setDeletingId(null);
     }

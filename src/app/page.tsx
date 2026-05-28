@@ -31,7 +31,15 @@ export default function DashboardPage() {
   >([]);
 
   useEffect(() => {
-    adminApi.getReports().then(setReport).catch(() => setReport(null));
+    const load = () => {
+      adminApi.getReports().then(setReport).catch(() => setReport(null));
+    };
+    load();
+    const id = window.setInterval(load, 15000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  useEffect(() => {
     adminApi
       .getProducts()
       .then((p) => setProducts(p.filter((x) => x.isRecommended).slice(0, 4) || p.slice(0, 4)))

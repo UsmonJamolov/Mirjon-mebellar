@@ -62,6 +62,7 @@ productsRouter.post("/", async (req, res) => {
       isNew: Boolean(body.isNew),
       isPopular: Boolean(body.isPopular),
       isRecommended: Boolean(body.isRecommended),
+      hideFromPopular: Boolean(body.hideFromPopular),
     });
     res.status(201).json(toProductDto(doc));
   } catch (e) {
@@ -88,6 +89,7 @@ productsRouter.patch("/:id", async (req, res) => {
       "isNew",
       "isPopular",
       "isRecommended",
+      "hideFromPopular",
     ];
     for (const f of fields) {
       if (req.body[f] !== undefined) doc[f] = req.body[f];

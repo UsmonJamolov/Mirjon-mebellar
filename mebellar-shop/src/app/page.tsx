@@ -1,15 +1,12 @@
 import { PremiumHome } from "@/components/premium/PremiumHome";
-import { fetchCategories, fetchProducts } from "@/lib/api";
+import { fetchBestsellers, fetchCategories, fetchProducts } from "@/lib/api";
 
 export default async function HomePage() {
-  const [categories, allProducts] = await Promise.all([
+  const [categories, allProducts, featured] = await Promise.all([
     fetchCategories(),
     fetchProducts(),
+    fetchBestsellers(4),
   ]);
-
-  const featured = allProducts
-    .filter((p) => p.isRecommended || p.isPopular)
-    .slice(0, 4);
 
   return (
     <PremiumHome

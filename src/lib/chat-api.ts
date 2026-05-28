@@ -33,6 +33,11 @@ export interface ActiveSketch {
 export interface ChatThreadState {
   threadId: string;
   customerName: string;
+  customerFirstName?: string;
+  customerLastName?: string;
+  customerPhone?: string;
+  customerAvatar?: string;
+  customerTelegramUsername?: string;
   status: ChatOrderStatus;
   customerAgreed: boolean;
   adminAgreed: boolean;
@@ -42,6 +47,7 @@ export interface ChatThreadState {
   adminLastSeenAt?: string | null;
   customerLastSeenAt?: string | null;
   orderRound?: number;
+  cleared?: boolean;
 }
 
 export const CHAT_STATUS_LABELS: Record<ChatOrderStatus, string> = {

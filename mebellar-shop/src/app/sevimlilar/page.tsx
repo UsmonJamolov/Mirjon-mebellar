@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { Heart } from "lucide-react";
+import { RequireAuth } from "@/components/auth/RequireAuth";
 import { ProductCard } from "@/components/product/ProductCard";
 import { products } from "@/lib/mock-data";
 import { useCart } from "@/context/CartContext";
 
-export default function FavoritesPage() {
+function FavoritesPageContent() {
   const { likedIds, hydrated } = useCart();
   const liked = hydrated ? products.filter((p) => likedIds.includes(p.id)) : [];
 
@@ -32,5 +33,13 @@ export default function FavoritesPage() {
         </div>
       )}
     </main>
+  );
+}
+
+export default function FavoritesPage() {
+  return (
+    <RequireAuth>
+      <FavoritesPageContent />
+    </RequireAuth>
   );
 }

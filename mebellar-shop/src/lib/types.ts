@@ -15,6 +15,9 @@ export interface Product {
   isNew?: boolean;
   isPopular?: boolean;
   isRecommended?: boolean;
+  hideFromPopular?: boolean;
+  /** MongoDB createdAt — tartiblash uchun */
+  createdAt?: string;
 }
 
 export interface Category {

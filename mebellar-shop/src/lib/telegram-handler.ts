@@ -11,8 +11,11 @@ import {
   markOtpDelivered,
 } from "@/lib/otp-store";
 import {
+  getShopPublicUrl,
   sendOtpToTelegram,
+  sendShopWelcome,
   sendTelegramMessage,
+  shopInlineKeyboard,
   TELEGRAM_BOT_TOKEN,
 } from "@/lib/telegram";
 
@@ -116,17 +119,36 @@ export async function handleTelegramUpdate(update: TgUpdate): Promise<void> {
   const chatId = msg.chat.id;
   const from = msg.from;
   const text = msg.text ?? "";
+  const cmd = text.split(/\s+/)[0]?.toLowerCase() ?? "";
+
+  // Sayt / yordam buyruqlari
+  if (
+    cmd === "/site" ||
+    cmd === "/shop" ||
+    cmd === "/sayt" ||
+    cmd === "/auth" ||
+    cmd === "/menu"
+  ) {
+    const shopUrl = getShopPublicUrl();
+    if (cmd === "/auth" && shopUrl) {
+      await sendTelegramMessage({
+        chatId,
+        text: "Kirish sahifasini oching va Telegram orqali kod oling:",
+        replyMarkup: {
+          inline_keyboard: [[{ text: "🔐 Kirish", url: `${shopUrl}/auth` }]],
+        },
+      });
+      return;
+    }
+    await sendShopWelcome(chatId);
+    return;
+  }
 
   // 1) /start <token>
   if (text.startsWith("/start")) {
     const payload = parseStartPayload(text);
     if (!payload) {
-      await sendTelegramMessage({
-        chatId,
-        text:
-          "Salom! <b>MMEBEL</b> botiga xush kelibsiz.\n\n" +
-          "Saytdagi <b>Telegram botga o'tish</b> tugmasini bosing va shu yerga qayting.",
-      });
+      await sendShopWelcome(chatId);
       return;
     }
 
@@ -155,6 +177,11 @@ export async function handleTelegramUpdate(update: TgUpdate): Promise<void> {
         chatId,
         "Kodni saytda <b>6 ta xonaga</b> kiriting.",
       );
+      await sendTelegramMessage({
+        chatId,
+        text: "Saytga qaytish:",
+        replyMarkup: shopInlineKeyboard(),
+      });
     } else {
       await sendContactKeyboard(chatId);
     }
@@ -186,6 +213,11 @@ export async function handleTelegramUpdate(update: TgUpdate): Promise<void> {
         chatId,
         "Rahmat! Kodni saytda <b>6 ta xonaga</b> kiriting.",
       );
+      await sendTelegramMessage({
+        chatId,
+        text: "Saytga qaytish:",
+        replyMarkup: shopInlineKeyboard(),
+      });
     } else {
       await sendTelegramMessage({
         chatId,
@@ -197,13 +229,23 @@ export async function handleTelegramUpdate(update: TgUpdate): Promise<void> {
     return;
   }
 
-  // 3) Default
-  if (text === "/help" || text === "/menu") {
+  // 3) /help
+  if (cmd === "/help") {
     await sendTelegramMessage({
       chatId,
       text:
-        "MMEBEL kirish boti.\n\n" +
-        "Saytda telefon raqam kiritganingizda kod shu yerga yuboriladi.",
+        "<b>Mebellar bot</b>\n\n" +
+        "/site — do'kon sayti\n" +
+        "/auth — kirish sahifasi\n" +
+        "/help — yordam\n\n" +
+        "Saytda kirish uchun OTP kod shu botga yuboriladi.",
+      replyMarkup: shopInlineKeyboard(),
     });
+    return;
+  }
+
+  // 4) Boshqa xabarlar — sayt tugmasi
+  if (text.trim()) {
+    await sendShopWelcome(chatId);
   }
 }

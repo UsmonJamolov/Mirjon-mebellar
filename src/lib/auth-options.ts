@@ -3,16 +3,22 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { connectDB } from "@/lib/mongodb";
 import { User } from "@/lib/models/User";
-
-const authSecret =
-  process.env.NEXTAUTH_SECRET ??
-  process.env.AUTH_SECRET ??
-  "mebellar-admin-dev-secret-change-in-production";
+import {
+  ADMIN_SESSION_COOKIE_NAME,
+  adminSessionCookieOptions,
+  authSecret,
+} from "@/lib/auth-cookies";
 
 export const authOptions: NextAuthOptions = {
   secret: authSecret,
   ...(process.env.AUTH_TRUST_HOST === "true" ? { trustHost: true } : {}),
   session: { strategy: "jwt", maxAge: 30 * 24 * 60 * 60 },
+  cookies: {
+    sessionToken: {
+      name: ADMIN_SESSION_COOKIE_NAME,
+      options: adminSessionCookieOptions(),
+    },
+  },
   pages: {
     signIn: "/kirish",
     error: "/kirish",

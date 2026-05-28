@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Plus } from "lucide-react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { ProductImagesEditor } from "@/components/products/ProductImagesEditor";
+import { CategoryManager } from "@/components/products/CategoryManager";
 import { adminApi } from "@/lib/api";
 
 export default function EditProductPage() {
@@ -13,9 +14,7 @@ export default function EditProductPage() {
   const id = String(params.id);
   const isNew = id === "new";
 
-  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [materials, setMaterials] = useState<string[]>([]);
-  const [newCat, setNewCat] = useState("");
   const [newMat, setNewMat] = useState("");
   const [images, setImages] = useState<string[]>([]);
   const [form, setForm] = useState({
@@ -27,11 +26,14 @@ export default function EditProductPage() {
     depth: 0,
     height: 0,
     description: "",
+    hideFromPopular: false,
+    isPopular: false,
   });
+  const [salesCount, setSalesCount] = useState(0);
   const [msg, setMsg] = useState("");
+  const [msgOk, setMsgOk] = useState(false);
 
   useEffect(() => {
-    adminApi.getCategories().then(setCategories).catch(() => []);
     adminApi.getSettings().then((s) => setMaterials(s.materials || [])).catch(() => {});
     if (!isNew) {
       adminApi
@@ -46,47 +48,64 @@ export default function EditProductPage() {
             depth: p.depth || 0,
             height: p.height || 0,
             description: p.description || "",
+            hideFromPopular: Boolean(p.hideFromPopular),
+            isPopular: Boolean(p.isPopular),
           });
           setImages(p.images?.length ? p.images : p.image ? [p.image] : []);
         })
         .catch(() => setMsg("Mahsulot topilmadi"));
+      fetch("/api/products/sales", { cache: "no-store" })
+        .then((r) => r.json())
+        .then((data: { sales?: Record<string, number> }) => {
+          setSalesCount(data.sales?.[id] ?? 0);
+        })
+        .catch(() => setSalesCount(0));
     }
   }, [id, isNew]);
 
-  const addCategory = async () => {
-    if (!newCat.trim()) return;
-    const c = await adminApi.createCategory(newCat.trim());
-    setCategories((prev) => [...prev, c]);
-    setForm((f) => ({ ...f, category: c.name }));
-    setNewCat("");
-  };
-
   const addMaterial = async () => {
     if (!newMat.trim()) return;
-    const r = await adminApi.addMaterial(newMat.trim());
-    setMaterials(r.materials);
-    setForm((f) => ({ ...f, material: newMat.trim() }));
-    setNewMat("");
+    try {
+      const r = await adminApi.addMaterial(newMat.trim());
+      setMaterials(r.materials);
+      setForm((f) => ({ ...f, material: newMat.trim() }));
+      setNewMat("");
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : "Material qo'shilmadi");
+    }
   };
 
   const save = async () => {
+    if (!form.name.trim()) {
+      setMsgOk(false);
+      setMsg("Mahsulot nomini kiriting");
+      return;
+    }
+    if (!form.category.trim()) {
+      setMsgOk(false);
+      setMsg("Kategoriya tanlang");
+      return;
+    }
+
     const payload = {
       ...form,
       images: images.filter(Boolean),
       image: images.filter(Boolean)[0] || "",
-      isRecommended: true,
     };
     try {
       if (isNew) {
         const p = await adminApi.createProduct(payload);
+        setMsgOk(true);
         setMsg("Mahsulot qo'shildi — do'konda ko'rinadi");
         router.push(`/mahsulotlar/${p.id}`);
       } else {
         await adminApi.updateProduct(id, payload);
+        setMsgOk(true);
         setMsg("Saqlandi — do'kon yangilandi");
       }
-    } catch {
-      setMsg("Saqlashda xato");
+    } catch (e) {
+      setMsgOk(false);
+      setMsg(e instanceof Error ? e.message : "Saqlashda xato");
     }
   };
 
@@ -95,35 +114,23 @@ export default function EditProductPage() {
       <div className="grid lg:grid-cols-2 gap-6">
         <div className="card p-6 space-y-4">
           <h2 className="text-lg font-semibold">Mahsulot ma&apos;lumotlari</h2>
-          <input
-            className="input-field"
-            placeholder="Nomi"
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-          />
           <div>
-            <label className="text-sm font-medium mb-1 block">Kategoriya</label>
-            <select
-              className="input-field mb-2"
-              value={form.category}
-              onChange={(e) => setForm({ ...form, category: e.target.value })}
-            >
-              {categories.map((c) => (
-                <option key={c.id}>{c.name}</option>
-              ))}
-            </select>
-            <div className="flex gap-2">
-              <input
-                className="input-field flex-1"
-                placeholder="Yangi kategoriya"
-                value={newCat}
-                onChange={(e) => setNewCat(e.target.value)}
-              />
-              <button type="button" onClick={addCategory} className="btn-secondary shrink-0">
-                <Plus size={18} />
-              </button>
-            </div>
+            <label className="text-sm font-medium mb-1 block">
+              Nomi <span className="text-red-500">*</span>
+            </label>
+            <input
+              className="input-field"
+              placeholder="Masalan: Zamonaviy divan"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              required
+            />
           </div>
+          <CategoryManager
+            value={form.category}
+            onChange={(category) => setForm({ ...form, category })}
+            onMessage={setMsg}
+          />
           <input
             type="number"
             className="input-field"
@@ -183,10 +190,39 @@ export default function EditProductPage() {
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
           />
+
+          {!isNew && (
+            <p className="text-sm text-gray-600">
+              Sotilgan: <strong>{salesCount}</strong> dona (buyurtmalardan)
+            </p>
+          )}
+
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={form.isPopular}
+              onChange={(e) => setForm({ ...form, isPopular: e.target.checked })}
+            />
+            Mashhur mahsulot sifatida belgilash
+          </label>
+
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={form.hideFromPopular}
+              onChange={(e) =>
+                setForm({ ...form, hideFromPopular: e.target.checked })
+              }
+            />
+            Bosh sahifa &quot;Mashhur mahsulotlar&quot; bo&apos;limidan yashirish
+          </label>
+
           <button type="button" onClick={save} className="btn-primary w-full">
             {isNew ? "Mahsulot qo'shish" : "Saqlash"}
           </button>
-          {msg && <p className="text-sm text-green-600">{msg}</p>}
+          {msg && (
+            <p className={`text-sm ${msgOk ? "text-green-600" : "text-red-600"}`}>{msg}</p>
+          )}
         </div>
 
         <div className="card p-6">

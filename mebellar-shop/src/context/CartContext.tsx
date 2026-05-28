@@ -8,6 +8,9 @@ import {
   useMemo,
   useState,
 } from "react";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { buildAuthRedirectUrl } from "@/lib/auth-protected";
 import type { CartItem, Product } from "@/lib/types";
 
 export interface ChatCartItemInput {
@@ -37,9 +40,23 @@ const STORAGE_KEY = "mebellar-cart";
 const LIKES_KEY = "mebellar-likes";
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const [items, setItems] = useState<CartItem[]>([]);
   const [likedIds, setLikedIds] = useState<string[]>([]);
   const [hydrated, setHydrated] = useState(false);
+
+  const ensureAuth = useCallback(
+    (callbackPath = "/savatcha") => {
+      if (status === "loading") return false;
+      if (!session?.user) {
+        router.push(buildAuthRedirectUrl(callbackPath));
+        return false;
+      }
+      return true;
+    },
+    [session?.user, status, router]
+  );
 
   useEffect(() => {
     try {
@@ -63,7 +80,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem(LIKES_KEY, JSON.stringify(likedIds));
   }, [likedIds, hydrated]);
 
-  const addChatOrderItem = useCallback((item: ChatCartItemInput) => {
+  const addChatOrderItem = useCallback(
+    (item: ChatCartItemInput) => {
+      if (!ensureAuth("/chat")) return;
     setItems((prev) => {
       const existing = prev.find((i) => i.productId === item.productId);
       if (existing) return prev;
@@ -78,9 +97,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         },
       ];
     });
-  }, []);
+  },
+    [ensureAuth]
+  );
 
-  const addItem = useCallback((product: Product, qty = 1) => {
+  const addItem = useCallback(
+    (product: Product, qty = 1) => {
+      if (!ensureAuth("/savatcha")) return;
     setItems((prev) => {
       const existing = prev.find((i) => i.productId === product.id);
       if (existing) {
@@ -101,7 +124,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         },
       ];
     });
-  }, []);
+  },
+    [ensureAuth]
+  );
 
   const removeItem = useCallback((productId: string) => {
     setItems((prev) => prev.filter((i) => i.productId !== productId));
@@ -119,13 +144,17 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const clearCart = useCallback(() => setItems([]), []);
 
-  const toggleLike = useCallback((productId: string) => {
-    setLikedIds((prev) =>
-      prev.includes(productId)
-        ? prev.filter((id) => id !== productId)
-        : [...prev, productId]
-    );
-  }, []);
+  const toggleLike = useCallback(
+    (productId: string) => {
+      if (!ensureAuth("/sevimlilar")) return;
+      setLikedIds((prev) =>
+        prev.includes(productId)
+          ? prev.filter((id) => id !== productId)
+          : [...prev, productId]
+      );
+    },
+    [ensureAuth]
+  );
 
   const total = useMemo(
     () => items.reduce((s, i) => s + i.price * i.quantity, 0),

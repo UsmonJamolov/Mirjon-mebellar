@@ -5,6 +5,7 @@ import { getLatestSketchMessageId } from "./chat-types";
 import type { SketchData } from "./sketch-types";
 import { isOrderStarted } from "./chat-rules";
 import { createOrderFromChat } from "./order-persistence";
+import { normalizeCustomerMeta, type CustomerMetaInput } from "./chat-customer";
 
 const STORE_PATH = path.join(process.cwd(), "..", "data", "chat-store.json");
 
@@ -39,6 +40,7 @@ export async function readChatStore(): Promise<ChatThreadState> {
       ...parsed,
       orderRound: parsed.orderRound ?? 1,
       agreedMessageId: parsed.agreedMessageId ?? null,
+      cleared: Boolean(parsed.cleared),
     };
     if (merged.customerAgreed && !merged.agreedMessageId) {
       merged.agreedMessageId = getLatestSketchMessageId(merged.messages);
@@ -65,15 +67,28 @@ function resolveStatus(customerAgreed: boolean, adminAgreed: boolean) {
   return "kelishuv" as const;
 }
 
-function applyCustomerMeta(
-  state: ChatThreadState,
-  meta?: { customerName?: string; customerPhone?: string }
-) {
-  if (meta?.customerName?.trim()) {
-    state.customerName = meta.customerName.trim();
-  }
-  if (meta?.customerPhone?.trim()) {
-    state.customerPhone = meta.customerPhone.trim();
+function applyCustomerMeta(state: ChatThreadState, meta?: CustomerMetaInput) {
+  if (!meta) return;
+  const hasMeta = [
+    meta.customerUserId,
+    meta.customerName,
+    meta.customerFirstName,
+    meta.customerLastName,
+    meta.customerPhone,
+    meta.customerAvatar,
+    meta.customerTelegramUsername,
+  ].some((v) => typeof v === "string" && v.trim());
+  if (!hasMeta) return;
+
+  const n = normalizeCustomerMeta(meta);
+  if (n.customerUserId) state.customerUserId = n.customerUserId;
+  if (n.customerFirstName) state.customerFirstName = n.customerFirstName;
+  if (n.customerLastName) state.customerLastName = n.customerLastName;
+  if (n.customerName) state.customerName = n.customerName;
+  if (n.customerPhone) state.customerPhone = n.customerPhone;
+  if (n.customerAvatar) state.customerAvatar = n.customerAvatar;
+  if (n.customerTelegramUsername) {
+    state.customerTelegramUsername = n.customerTelegramUsername;
   }
 }
 
@@ -84,9 +99,10 @@ export async function touchAdminPresence(): Promise<ChatThreadState> {
   return state;
 }
 
-export async function touchCustomerPresence(): Promise<ChatThreadState> {
+export async function touchCustomerPresence(meta?: CustomerMetaInput): Promise<ChatThreadState> {
   const state = await readChatStore();
   state.customerLastSeenAt = new Date().toISOString();
+  if (meta) applyCustomerMeta(state, meta);
   await writeChatStore(state);
   return state;
 }
@@ -97,10 +113,17 @@ export async function addMessage(
     text?: string;
     sketch?: SketchData;
     customerName?: string;
+    customerFirstName?: string;
+    customerLastName?: string;
     customerPhone?: string;
+    customerAvatar?: string;
+    customerTelegramUsername?: string;
   }
 ): Promise<ChatThreadState> {
   const state = await readChatStore();
+  if (state.cleared) {
+    state.cleared = false;
+  }
   if (sender === "customer") {
     applyCustomerMeta(state, payload);
   }
@@ -155,7 +178,7 @@ export async function updateActiveSketch(
 export async function setAgreement(
   sender: ChatMessage["sender"],
   messageId?: string | null,
-  meta?: { customerName?: string; customerPhone?: string }
+  meta?: CustomerMetaInput
 ): Promise<ChatThreadState> {
   const state = await readChatStore();
   const sketchMessageId = messageId ?? getLatestSketchMessageId(state.messages);
@@ -255,12 +278,18 @@ export async function deleteMessage(
 export async function resetMainChat(): Promise<ChatThreadState> {
   const state: ChatThreadState = {
     ...DEFAULT_STATE,
-    messages: DEFAULT_STATE.messages.map((m) => ({ ...m })),
+    cleared: true,
+    customerName: "",
+    customerPhone: "",
+    messages: [],
     activeSketch: null,
     adminLastSeenAt: null,
     customerLastSeenAt: null,
     agreedMessageId: null,
     orderRound: 1,
+    customerAgreed: false,
+    adminAgreed: false,
+    status: "kelishuv",
   };
   await writeChatStore(state);
   return state;

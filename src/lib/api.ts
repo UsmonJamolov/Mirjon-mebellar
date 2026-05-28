@@ -4,13 +4,22 @@ const API_BASE =
     : process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") || "http://127.0.0.1:4000";
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...init,
-    headers: { "Content-Type": "application/json", ...init?.headers },
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error((data as { error?: string }).error || "So'rov xatosi");
-  return data as T;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
+
+  try {
+    const res = await fetch(`${API_BASE}${path}`, {
+      cache: "no-store",
+      ...init,
+      signal: controller.signal,
+      headers: { "Content-Type": "application/json", ...init?.headers },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error((data as { error?: string }).error || "So'rov xatosi");
+    return data as T;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 export type OrderDto = {
@@ -36,6 +45,7 @@ export type ProductDto = {
   images?: string[];
   isRecommended?: boolean;
   isPopular?: boolean;
+  hideFromPopular?: boolean;
 };
 
 export type CustomerDto = {
@@ -63,10 +73,16 @@ export type InventoryDto = {
 export type ThreadDto = {
   id: string;
   customerName: string;
+  customerFirstName?: string;
+  customerLastName?: string;
+  customerPhone?: string;
+  customerAvatar?: string;
+  customerTelegramUsername?: string;
   lastMessage: string;
   time: string;
   isLive?: boolean;
   unread?: number;
+  status?: string;
 };
 
 export type ReportSummary = {
@@ -99,6 +115,7 @@ export const adminApi = {
     const qs = q.toString();
     return api<OrderDto[]>(`/api/orders${qs ? `?${qs}` : ""}`);
   },
+  getOrder: (id: string) => api<OrderDto>(`/api/orders/${encodeURIComponent(id)}`),
   createOrder: (body: Record<string, unknown>) =>
     api<OrderDto>("/api/orders", { method: "POST", body: JSON.stringify(body) }),
   patchOrder: (id: string, body: Record<string, unknown>) =>
@@ -115,11 +132,22 @@ export const adminApi = {
     api<ProductDto>("/api/products", { method: "POST", body: JSON.stringify(body) }),
   updateProduct: (id: string, body: Record<string, unknown>) =>
     api<ProductDto>(`/api/products/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  deleteProduct: (id: string) =>
+    api<{ ok: boolean }>(`/api/products/${id}`, { method: "DELETE" }),
   getCategories: () => api<{ id: string; name: string; slug: string }[]>("/api/categories"),
   createCategory: (name: string) =>
     api<{ id: string; name: string }>("/api/categories", {
       method: "POST",
       body: JSON.stringify({ name }),
+    }),
+  updateCategory: (id: string, body: { name?: string; image?: string }) =>
+    api<{ id: string; name: string; slug?: string }>(`/api/categories/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
+  deleteCategory: (id: string) =>
+    api<{ ok: boolean }>(`/api/categories/${encodeURIComponent(id)}`, {
+      method: "DELETE",
     }),
   getInventory: (params?: { q?: string; category?: string; status?: string }) => {
     const q = new URLSearchParams();

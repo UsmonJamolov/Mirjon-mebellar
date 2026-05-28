@@ -1,11 +1,7 @@
-import { fetchCategories, fetchProducts } from "@/lib/api";
 import { CatalogClient } from "./CatalogClient";
 
-export default async function CatalogPage() {
-  const [categories, products] = await Promise.all([
-    fetchCategories(),
-    fetchProducts(),
-  ]);
+export const dynamic = "force-dynamic";
 
-  return <CatalogClient categories={categories} products={products} />;
+export default function CatalogPage() {
+  return <CatalogClient />;
 }

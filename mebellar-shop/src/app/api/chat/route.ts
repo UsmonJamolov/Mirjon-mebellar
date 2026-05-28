@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getAuthSession } from "@/lib/auth-server";
 import type { ChatSender } from "@/lib/chat-types";
 import type { SketchData } from "@/lib/sketch-types";
 import {
@@ -28,6 +29,17 @@ export async function GET() {
   return NextResponse.json(state, { headers: CORS_HEADERS });
 }
 
+async function requireCustomerSession() {
+  const session = await getAuthSession();
+  if (!session?.user?.id) {
+    return NextResponse.json(
+      { error: "Kirish talab qilinadi" },
+      { status: 401, headers: CORS_HEADERS }
+    );
+  }
+  return session;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json().catch(() => ({}))) as {
@@ -36,34 +48,65 @@ export async function POST(req: NextRequest) {
       text?: string;
       sketch?: SketchData;
       messageId?: string;
+      customerUserId?: string;
       customerName?: string;
       customerPhone?: string;
+      customerAvatar?: string;
+      customerFirstName?: string;
+      customerLastName?: string;
+      customerTelegramUsername?: string;
     };
 
     const action = body.action;
     const sender = body.sender ?? "customer";
 
+    if (sender === "customer") {
+      const auth = await requireCustomerSession();
+      if (auth instanceof NextResponse) return auth;
+    }
+
     if (action === "message") {
       const state = await addMessage(sender, {
         text: body.text,
         sketch: body.sketch,
+        customerUserId: body.customerUserId,
         customerName: body.customerName,
         customerPhone: body.customerPhone,
+        customerAvatar: body.customerAvatar,
+        customerFirstName: body.customerFirstName,
+        customerLastName: body.customerLastName,
+        customerTelegramUsername: body.customerTelegramUsername,
       });
       return NextResponse.json(state, { headers: CORS_HEADERS });
     }
 
     if (action === "agree") {
       const state = await setAgreement(sender, body.messageId, {
+        customerUserId: body.customerUserId,
         customerName: body.customerName,
         customerPhone: body.customerPhone,
+        customerAvatar: body.customerAvatar,
+        customerFirstName: body.customerFirstName,
+        customerLastName: body.customerLastName,
+        customerTelegramUsername: body.customerTelegramUsername,
       });
       return NextResponse.json(state, { headers: CORS_HEADERS });
     }
 
     if (action === "heartbeat") {
+      const meta = {
+        customerUserId: body.customerUserId,
+        customerName: body.customerName,
+        customerFirstName: body.customerFirstName,
+        customerLastName: body.customerLastName,
+        customerPhone: body.customerPhone,
+        customerAvatar: body.customerAvatar,
+        customerTelegramUsername: body.customerTelegramUsername,
+      };
       const state =
-        sender === "customer" ? await touchCustomerPresence() : await touchAdminPresence();
+        sender === "customer"
+          ? await touchCustomerPresence(meta)
+          : await touchAdminPresence();
       return NextResponse.json(state, { headers: CORS_HEADERS });
     }
 
@@ -109,6 +152,11 @@ export async function PATCH(req: NextRequest) {
       sketch?: SketchData;
     };
     const sender = body.sender ?? "customer";
+
+    if (sender === "customer") {
+      const auth = await requireCustomerSession();
+      if (auth instanceof NextResponse) return auth;
+    }
 
     if (body.action !== "updateSketch" || !body.sketch) {
       return NextResponse.json(

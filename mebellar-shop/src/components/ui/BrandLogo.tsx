@@ -7,7 +7,7 @@ interface BrandLogoProps {
   inverted?: boolean;
 }
 
-/** Matn + SVG — tashqi rasm yoki lucide ga bog‘liq emas */
+/** Do'kon brand logosi — har doim M + Mebellar, sozlamalardan o'zgarmaydi */
 export function BrandLogo({ className, showText = true, inverted = false }: BrandLogoProps) {
   return (
     <Link href="/" className={cn("flex items-center gap-2.5 shrink-0", className)}>
@@ -18,7 +18,7 @@ export function BrandLogo({ className, showText = true, inverted = false }: Bran
         <span
           className={cn(
             "text-xl font-bold tracking-tight",
-            inverted ? "text-white" : "text-[#3d3229]"
+            inverted ? "text-white" : "text-[#3d3229] dark:text-[#f5f0e8]"
           )}
         >
           Mebellar

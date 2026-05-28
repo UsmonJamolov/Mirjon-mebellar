@@ -3,15 +3,18 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 const projectRoot = path.dirname(fileURLToPath(import.meta.url));
-const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") || "http://127.0.0.1:4000";
-
 const nextConfig: NextConfig = {
+  /** Tunnel orqali telefondan dev ochish */
+  allowedDevOrigins: ["*.trycloudflare.com", "*.loca.lt"],
+  async redirects() {
+    return [{ source: "/catalog", destination: "/katalog", permanent: true }];
+  },
   async rewrites() {
     return [
-      { source: "/api/products", destination: `${apiUrl}/api/products` },
-      { source: "/api/products/:path*", destination: `${apiUrl}/api/products/:path*` },
-      { source: "/api/categories", destination: `${apiUrl}/api/categories` },
-      { source: "/api/health/db", destination: `${apiUrl}/api/health/db` },
+      {
+        source: "/uploads/:path*",
+        destination: "http://127.0.0.1:3000/uploads/:path*",
+      },
     ];
   },
   /** Alohida loyiha — parent MMebellar lockfile bilan aralashmasin */

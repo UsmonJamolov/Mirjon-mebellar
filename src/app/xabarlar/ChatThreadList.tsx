@@ -1,17 +1,24 @@
 "use client";
 
-import Image from "next/image";
 import { Trash2 } from "lucide-react";
+import { ChatAvatar } from "@/components/chat/ChatAvatar";
+import type { ChatOrderStatus } from "@/lib/chat-types";
+import { formatCustomerDisplayName } from "@/lib/chat-customer";
 import { cn } from "@/lib/utils";
 
 export interface ThreadListItem {
   id: string;
   customerName: string;
-  avatar: string;
+  customerFirstName?: string;
+  customerLastName?: string;
+  customerPhone?: string;
+  customerAvatar?: string;
+  customerTelegramUsername?: string;
   lastMessage: string;
   time: string;
   unread?: number;
   isLive?: boolean;
+  status?: ChatOrderStatus;
 }
 
 interface ChatThreadListProps {
@@ -23,8 +30,17 @@ interface ChatThreadListProps {
   onDelete?: (id: string) => void;
 }
 
-const DEFAULT_AVATAR =
-  "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=80&h=80&fit=crop";
+function resolveDisplayName(t: ThreadListItem) {
+  const fromParts = formatCustomerDisplayName(
+    t.customerFirstName,
+    t.customerLastName,
+    ""
+  );
+  if (fromParts) return fromParts;
+  const legacy = t.customerName?.trim();
+  if (legacy && legacy !== "Mijoz") return legacy;
+  return "Mijoz";
+}
 
 export function ChatThreadList({
   threads,
@@ -34,70 +50,96 @@ export function ChatThreadList({
   onSelect,
   onDelete,
 }: ChatThreadListProps) {
-  const filtered = threads.filter((t) =>
-    t.customerName.toLowerCase().includes(searchQuery.trim().toLowerCase())
-  );
+  const q = searchQuery.trim().toLowerCase();
+  const filtered = threads.filter((t) => {
+    if (!q) return true;
+    const phone = (t.customerPhone ?? "").replace(/\D/g, "");
+    const qDigits = q.replace(/\D/g, "");
+    const displayName = resolveDisplayName(t);
+    return (
+      displayName.toLowerCase().includes(q) ||
+      (t.customerPhone ?? "").toLowerCase().includes(q) ||
+      (qDigits.length > 0 && phone.includes(qDigits)) ||
+      t.lastMessage.toLowerCase().includes(q)
+    );
+  });
 
   return (
-    <aside className="flex flex-col h-full min-h-0 border-l border-gray-100 bg-[#f8f9fc]">
-      <div className="p-3 border-b border-gray-100 shrink-0 space-y-2">
+    <aside className="flex flex-col h-full min-h-0 border-l border-gray-200 bg-[#f4f4f5]">
+      <div className="p-3 border-b border-gray-200 shrink-0 bg-white">
         <input
           type="search"
-          placeholder="Mijoz qidirish..."
+          placeholder="Qidiruv"
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="w-full rounded-[12px] border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-[#3b82f6] focus:ring-2 focus:ring-[#3b82f6]/20"
+          className="w-full rounded-xl border border-gray-200 bg-[#f4f4f5] px-3 py-2.5 text-sm outline-none focus:border-[#3b82f6] focus:bg-white focus:ring-2 focus:ring-[#3b82f6]/15"
         />
-        <p className="text-[10px] text-gray-400 flex items-center gap-1">
-          <Trash2 size={12} />
-          O&apos;chirish: chiqitchani bosing (chat tozalanadi)
-        </p>
       </div>
 
-      <ul className="flex-1 min-h-0 overflow-y-auto scrollbar-hide divide-y divide-gray-100">
+      <ul className="flex-1 min-h-0 overflow-y-auto scrollbar-hide">
         {filtered.map((t) => {
           const active = t.id === selectedId;
+          const displayName = resolveDisplayName(t);
+          const unread = t.unread ?? 0;
+
           return (
             <li key={t.id} className="group relative">
               <button
                 type="button"
                 onClick={() => onSelect(t.id)}
                 className={cn(
-                  "w-full flex items-center gap-3 px-3 py-3 text-left transition hover:bg-white/80 pr-10",
-                  active && "bg-white border-l-4 border-l-[#3b82f6] pl-2"
+                  "w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors",
+                  active ? "bg-[#3390ec]/12" : "bg-white hover:bg-[#f4f4f5]"
                 )}
               >
-                <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-gray-200">
-                  <Image
-                    src={t.avatar || DEFAULT_AVATAR}
-                    alt=""
-                    fill
-                    className="object-cover"
-                    sizes="48px"
-                  />
-                  {t.isLive && (
-                    <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-500 border-2 border-white" />
+                <ChatAvatar
+                  name={displayName}
+                  imageUrl={t.customerAvatar}
+                  size="md"
+                  online={t.isLive}
+                />
+
+                <div className="min-w-0 flex-1">
+                  <p
+                    className={cn(
+                      "text-[15px] font-semibold truncate leading-tight",
+                      active ? "text-[#3390ec]" : "text-[#000]"
+                    )}
+                  >
+                    {displayName}
+                  </p>
+                  <p
+                    className={cn(
+                      "text-[14px] truncate mt-0.5 leading-snug",
+                      unread > 0 ? "text-[#000] font-medium" : "text-[#707579]"
+                    )}
+                  >
+                    {t.lastMessage}
+                  </p>
+                </div>
+
+                <div className="shrink-0 flex flex-col items-end self-start pt-0.5 gap-1.5 min-w-[42px]">
+                  <span
+                    className={cn(
+                      "text-xs tabular-nums leading-none",
+                      unread > 0 ? "text-[#3390ec] font-medium" : "text-[#999]"
+                    )}
+                  >
+                    {t.time}
+                  </span>
+                  {unread > 0 ? (
+                    <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-[#3390ec] text-white text-xs font-semibold flex items-center justify-center">
+                      {unread > 99 ? "99+" : unread}
+                    </span>
+                  ) : (
+                    <span className="h-5" aria-hidden />
                   )}
                 </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex justify-between gap-2">
-                    <p className={cn("text-sm font-semibold truncate", active && "text-[#3b82f6]")}>
-                      {t.customerName}
-                    </p>
-                    <span className="text-[10px] text-gray-400 shrink-0">{t.time}</span>
-                  </div>
-                  <p className="text-xs text-gray-500 truncate mt-0.5">{t.lastMessage}</p>
-                </div>
-                {t.unread ? (
-                  <span className="shrink-0 min-w-[20px] h-5 px-1.5 rounded-full bg-[#3b82f6] text-white text-[10px] font-bold flex items-center justify-center">
-                    {t.unread > 9 ? "9+" : t.unread}
-                  </span>
-                ) : null}
               </button>
               {onDelete && (
                 <button
                   type="button"
-                  title={t.id === "main" ? "Mijoz chatini tozalash" : "Chatni o'chirish"}
+                  title={t.id === "main" ? "Chatni tozalash" : "O'chirish"}
                   onClick={(e) => {
                     e.stopPropagation();
                     onDelete(t.id);
@@ -111,7 +153,11 @@ export function ChatThreadList({
           );
         })}
         {filtered.length === 0 && (
-          <li className="p-6 text-center text-sm text-gray-500">Mijoz topilmadi</li>
+          <li className="p-8 text-center text-sm text-gray-500 bg-white m-3 rounded-xl">
+            {searchQuery.trim()
+              ? "Mijoz topilmadi"
+              : "Chatlar yo'q. Mijoz yozganda shu yerda ko'rinadi."}
+          </li>
         )}
       </ul>
     </aside>

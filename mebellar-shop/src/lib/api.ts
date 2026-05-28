@@ -1,9 +1,10 @@
-import { API_BASE } from "./api-config";
+import { getShopApiBase } from "./api-config";
 import type { Category, Product, UserOrder } from "./types";
 import { categories as mockCategories, products as mockProducts, userOrders as mockOrders } from "./mock-data";
+import { getProductSalesMap, pickBestsellerProducts } from "./product-sales";
 
 async function get<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetch(`${getShopApiBase()}${path}`, {
     ...init,
     headers: { "Content-Type": "application/json", ...init?.headers },
   });
@@ -13,7 +14,7 @@ async function get<T>(path: string, init?: RequestInit): Promise<T> {
 
 export async function fetchCategories(): Promise<Category[]> {
   try {
-    return await get<Category[]>("/api/categories");
+    return await get<Category[]>("/api/categories", { cache: "no-store" });
   } catch {
     return mockCategories;
   }
@@ -32,9 +33,7 @@ export async function fetchProducts(params?: {
     if (params?.popular) qs.set("popular", "true");
     if (params?.recommended) qs.set("recommended", "true");
     const query = qs.toString() ? `?${qs}` : "";
-    return await get<Product[]>(`/api/products${query}`, {
-      next: { revalidate: 30 },
-    });
+    return await get<Product[]>(`/api/products${query}`, { cache: "no-store" });
   } catch {
     let list = [...mockProducts];
     if (params?.cat) {
@@ -48,11 +47,37 @@ export async function fetchProducts(params?: {
   }
 }
 
+export async function fetchBestsellers(limit = 4): Promise<Product[]> {
+  const [products, salesMap] = await Promise.all([
+    fetchProducts(),
+    getProductSalesMap(),
+  ]);
+  return pickBestsellerProducts(products, salesMap, limit);
+}
+
 export async function fetchProduct(id: string): Promise<Product | null> {
   try {
-    return await get<Product>(`/api/products/${id}`, { cache: "no-store" });
+    return await get<Product>(`/api/products/${encodeURIComponent(id)}`, {
+      cache: "no-store",
+    });
   } catch {
     return mockProducts.find((p) => p.id === id) ?? null;
+  }
+}
+
+export type PublicSettings = {
+  storeName: string;
+  logo: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+};
+
+export async function fetchPublicSettings(): Promise<PublicSettings> {
+  try {
+    return await get<PublicSettings>("/api/settings", { cache: "no-store" });
+  } catch {
+    return { storeName: "Mebellar", logo: "" };
   }
 }
 
@@ -73,7 +98,7 @@ export async function createOrder(body: {
   items: { name: string; quantity: number; productId?: string; price?: number }[];
   total: number;
 }): Promise<UserOrder> {
-  const res = await fetch(`${API_BASE}/api/orders`, {
+  const res = await fetch(`${getShopApiBase()}/api/orders`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),

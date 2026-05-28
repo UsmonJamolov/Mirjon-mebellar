@@ -7,7 +7,9 @@
     "dev:clean": "node -e \"require('fs').rmSync('.next',{recursive:true,force:true})\" && next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "tunnel:shop": "npx --yes cloudflared tunnel --url http://localhost:3001",
+    "tunnel:admin": "npx --yes cloudflared tunnel --url http://localhost:3000"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
