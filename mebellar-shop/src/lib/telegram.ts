@@ -34,14 +34,33 @@ export function getShopPublicUrl(): string | null {
   return url;
 }
 
-export function shopInlineKeyboard() {
+export function shopAuthUrl(otpToken?: string): string | null {
+  const shopUrl = getShopPublicUrl();
+  if (!shopUrl) return null;
+  if (otpToken) {
+    return `${shopUrl}/auth?token=${encodeURIComponent(otpToken)}`;
+  }
+  return `${shopUrl}/auth`;
+}
+
+export function shopInlineKeyboard(otpToken?: string) {
   const shopUrl = getShopPublicUrl();
   if (!shopUrl) return undefined;
+  const authUrl = shopAuthUrl(otpToken) ?? `${shopUrl}/auth`;
   return {
     inline_keyboard: [
       [{ text: "🛋 Mebellar do'konini ochish", url: shopUrl }],
-      [{ text: "🔐 Kirish (auth)", url: `${shopUrl}/auth` }],
+      [{ text: "🔐 Kirish (auth)", url: authUrl }],
     ],
+  };
+}
+
+/** OTP yuborilgandan keyin saytga qaytish — token bilan bir xil sessiya saqlanadi */
+export function shopReturnKeyboard(otpToken: string) {
+  const authUrl = shopAuthUrl(otpToken);
+  if (!authUrl) return undefined;
+  return {
+    inline_keyboard: [[{ text: "🔐 Kodni kiritish (sayt)", url: authUrl }]],
   };
 }
 
@@ -129,6 +148,8 @@ export async function sendShopWelcome(chatId: string | number): Promise<boolean>
       "⚠️ Hozir sayt havolasi sozlanmagan.",
       "Admin <code>TELEGRAM_SHOP_URL</code> ni .env ga qo'shishi kerak."
     );
+  } else {
+    lines.push("", `🔗 Do'kon: <a href="${shopUrl}">${shopUrl}</a>`);
   }
   return sendTelegramMessage({
     chatId,

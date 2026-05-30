@@ -380,3 +380,36 @@ Ikkala loyihani ALohida terminalda ishga tushiring.
       "Buyurtma qabul qilindi — ish boshlandi"
 
 ================================================================================
+  MOBIL ILOVA (React Native / Expo)
+================================================================================
+
+  Papka: mebellar-mobile
+  Do'kon API bilan bir xil ma'lumotlar va funksiyalar.
+
+  TALAB:
+    • mebellar-shop ishlab turishi kerak (:3001)
+    • Telefon va kompyuter bir Wi-Fi da
+    • Expo Go ilovasi (Google Play / App Store)
+
+  --- O'rnatish (bir marta) ---
+
+    cd C:\Users\HP\Desktop\MMebellar\mebellar-mobile
+    npm install
+
+  .env fayl (kompyuter IP):
+    EXPO_PUBLIC_API_URL=http://10.181.191.114:3001
+    EXPO_PUBLIC_BOT_USERNAME=mmebeluz_bot
+
+  --- Ishga tushirish ---
+
+    cd C:\Users\HP\Desktop\MMebellar\mebellar-mobile
+    npm start
+
+  Terminaldagi QR kodni Expo Go bilan skanerlang.
+
+  Ekranlar: Bosh, Katalog, Savat, Chat, Profil, Kirish (Telegram OTP),
+  Buyurtmalar, Sevimlilar, Eskiz, Checkout — web do'kon bilan bir xil.
+
+  Batafsil: mebellar-mobile/README.md
+
+================================================================================

@@ -15,7 +15,9 @@ import {
   sendOtpToTelegram,
   sendShopWelcome,
   sendTelegramMessage,
+  shopAuthUrl,
   shopInlineKeyboard,
+  shopReturnKeyboard,
   TELEGRAM_BOT_TOKEN,
 } from "@/lib/telegram";
 
@@ -131,11 +133,16 @@ export async function handleTelegramUpdate(update: TgUpdate): Promise<void> {
   ) {
     const shopUrl = getShopPublicUrl();
     if (cmd === "/auth" && shopUrl) {
+      const active = await findSessionByTelegramChat(String(chatId));
+      const authUrl =
+        active && active.state !== "expired" && active.state !== "verified"
+          ? shopAuthUrl(active.token)
+          : shopAuthUrl();
       await sendTelegramMessage({
         chatId,
         text: "Kirish sahifasini oching va Telegram orqali kod oling:",
         replyMarkup: {
-          inline_keyboard: [[{ text: "🔐 Kirish", url: `${shopUrl}/auth` }]],
+          inline_keyboard: [[{ text: "🔐 Kirish", url: authUrl ?? `${shopUrl}/auth` }]],
         },
       });
       return;
@@ -180,7 +187,7 @@ export async function handleTelegramUpdate(update: TgUpdate): Promise<void> {
       await sendTelegramMessage({
         chatId,
         text: "Saytga qaytish:",
-        replyMarkup: shopInlineKeyboard(),
+        replyMarkup: shopReturnKeyboard(payload),
       });
     } else {
       await sendContactKeyboard(chatId);
@@ -216,7 +223,7 @@ export async function handleTelegramUpdate(update: TgUpdate): Promise<void> {
       await sendTelegramMessage({
         chatId,
         text: "Saytga qaytish:",
-        replyMarkup: shopInlineKeyboard(),
+        replyMarkup: shopReturnKeyboard(session.token),
       });
     } else {
       await sendTelegramMessage({

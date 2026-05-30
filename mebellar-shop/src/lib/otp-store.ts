@@ -152,6 +152,7 @@ export async function attachPhoneToSession(
   const store = await readStore();
   const s = store.sessions[token];
   if (!s) return null;
+  s.phone = phone;
   s.telegram = { ...(s.telegram ?? { id: "" }), phone };
   store.sessions[token] = s;
   await writeStore(store);
@@ -217,7 +218,7 @@ export async function findSessionByPhone(
   let latest: OtpSession | null = null;
   for (const s of Object.values(store.sessions)) {
     if (s.state === "verified" || s.state === "expired") continue;
-    const sd = (s.phone ?? "").replace(/\D/g, "");
+    const sd = (s.phone ?? s.telegram?.phone ?? "").replace(/\D/g, "");
     if (sd && sd === digits) {
       if (!latest || s.createdAt > latest.createdAt) latest = s;
     }

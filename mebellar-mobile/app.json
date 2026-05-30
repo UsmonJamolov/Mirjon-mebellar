@@ -1,0 +1,33 @@
+{
+  "expo": {
+    "name": "Mebellar",
+    "slug": "mebellar-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "scheme": "mebellar",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#3d3229"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "uz.mmebel.mobile"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#3d3229",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "package": "uz.mmebel.mobile"
+    },
+    "plugins": ["expo-router"],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

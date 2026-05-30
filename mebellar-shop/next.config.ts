@@ -5,7 +5,7 @@ import { fileURLToPath } from "url";
 const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 const nextConfig: NextConfig = {
   /** Tunnel orqali telefondan dev ochish */
-  allowedDevOrigins: ["*.trycloudflare.com", "*.loca.lt"],
+  allowedDevOrigins: ["*.trycloudflare.com", "*.loca.lt", "10.181.191.114"],
   async redirects() {
     return [{ source: "/catalog", destination: "/katalog", permanent: true }];
   },

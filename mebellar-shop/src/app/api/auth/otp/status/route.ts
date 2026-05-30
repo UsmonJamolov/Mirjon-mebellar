@@ -20,7 +20,13 @@ export async function GET(req: Request) {
     expiresAt: s.expiresAt,
     lastSentAt: s.lastSentAt,
     hasTelegram: Boolean(s.telegram?.id),
-    telegramName: s.telegram?.firstName ?? "",
-    phone: s.phone ?? "",
+    telegramName:
+      [s.telegram?.firstName, s.telegram?.lastName]
+        .filter(Boolean)
+        .join(" ")
+        .trim() ||
+      s.telegram?.username ||
+      "",
+    phone: s.telegram?.phone ?? s.phone ?? "",
   });
 }

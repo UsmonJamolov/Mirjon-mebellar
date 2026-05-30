@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAuthSession } from "@/lib/auth-server";
+import { getRequestUser } from "@/lib/request-user";
 import {
   createOrderFromShop,
   listOrdersForCustomer,
@@ -10,9 +10,9 @@ import { normalizePhone } from "@/lib/phone-auth";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET() {
-  const session = await getAuthSession();
-  const phone = session?.user?.phone ?? "";
+export async function GET(req: Request) {
+  const user = await getRequestUser(req);
+  const phone = user?.phone ?? "";
   const orders = await listOrdersForCustomer(phone);
   return NextResponse.json(orders);
 }
@@ -21,18 +21,18 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const session = await getAuthSession();
+    const user = await getRequestUser(req);
 
-    if (!session?.user?.id) {
+    if (!user?.id) {
       return NextResponse.json(
         { error: "To'lov uchun avval ro'yxatdan o'ting" },
         { status: 401 }
       );
     }
 
-    const customerName = String(body.customerName ?? session?.user?.name ?? "").trim();
+    const customerName = String(body.customerName ?? user?.name ?? "").trim();
     const customerPhone = normalizePhone(
-      String(body.customerPhone ?? session?.user?.phone ?? "")
+      String(body.customerPhone ?? user?.phone ?? "")
     );
     const customerAddress = String(body.customerAddress ?? "").trim();
     const paymentMethod = String(body.paymentMethod ?? "payme");

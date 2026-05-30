@@ -17,6 +17,7 @@ import { motion, type Variants } from "framer-motion";
 const OTP_LENGTH = 6;
 const RESEND_SECONDS = 60;
 const POLL_INTERVAL_MS = 2500;
+const OTP_TOKEN_STORAGE_KEY = "mebellar_otp_token";
 
 interface OtpStartResponse {
   ok: boolean;
@@ -27,6 +28,13 @@ interface OtpStartResponse {
   lastSentAt: number;
   ttlMs: number;
   telegramConfigured: boolean;
+}
+
+interface OtpResumeResponse extends OtpStartResponse {
+  state?: "pending" | "delivered" | "verified" | "expired";
+  hasTelegram?: boolean;
+  telegramName?: string;
+  phone?: string;
 }
 
 interface OtpStatusResponse {
@@ -94,6 +102,11 @@ export function AuthPageContent() {
     return cb && cb.startsWith("/") ? cb : "/profil";
   }, [searchParams]);
 
+  const urlToken = useMemo(
+    () => searchParams.get("token")?.trim() ?? "",
+    [searchParams]
+  );
+
   const [digits, setDigits] = useState<string[]>(
     Array.from({ length: OTP_LENGTH }, () => "")
   );
@@ -128,6 +141,25 @@ export function AuthPageContent() {
     };
   }, []);
 
+  const applyOtpLinked = useCallback((data: OtpStatusResponse | OtpResumeResponse) => {
+    if (data.state === "delivered" || data.hasTelegram) {
+      setTgLinked(data.state === "delivered");
+      if (data.telegramName) setTgName(data.telegramName);
+      if (data.phone) setTgPhone(data.phone);
+      if (data.state === "delivered") {
+        setInfo("Kod Telegram orqali yuborildi.");
+      }
+    }
+  }, []);
+
+  const persistToken = useCallback((token: string) => {
+    try {
+      sessionStorage.setItem(OTP_TOKEN_STORAGE_KEY, token);
+    } catch {
+      /* private mode */
+    }
+  }, []);
+
   const startSession = useCallback(async () => {
     setStarting(true);
     setError("");
@@ -141,6 +173,7 @@ export function AuthPageContent() {
       const data = (await res.json()) as OtpStartResponse;
       if (!res.ok || !data.ok) throw new Error("start failed");
       setSession(data);
+      persistToken(data.token);
       setResendIn(RESEND_SECONDS);
       window.requestAnimationFrame(() => inputsRef.current[0]?.focus());
     } catch {
@@ -148,13 +181,57 @@ export function AuthPageContent() {
     } finally {
       setStarting(false);
     }
-  }, []);
+  }, [persistToken]);
+
+  const resumeSession = useCallback(
+    async (token: string) => {
+      setStarting(true);
+      setError("");
+      setInfo("");
+      setDigits(Array.from({ length: OTP_LENGTH }, () => ""));
+      try {
+        const res = await fetch(
+          `/api/auth/otp/resume?token=${encodeURIComponent(token)}`,
+          { cache: "no-store" }
+        );
+        const data = (await res.json()) as OtpResumeResponse;
+        if (!res.ok || !data.ok) throw new Error("resume failed");
+        setSession(data);
+        persistToken(data.token);
+        applyOtpLinked(data);
+        setResendIn(RESEND_SECONDS);
+        window.requestAnimationFrame(() => inputsRef.current[0]?.focus());
+      } catch {
+        try {
+          sessionStorage.removeItem(OTP_TOKEN_STORAGE_KEY);
+        } catch {
+          /* ignore */
+        }
+        setStarting(false);
+        await startSession();
+        return;
+      }
+      setStarting(false);
+    },
+    [applyOtpLinked, persistToken, startSession]
+  );
 
   useEffect(() => {
     if (sessionStartedRef.current) return;
     sessionStartedRef.current = true;
-    void startSession();
-  }, [startSession]);
+
+    const stored =
+      typeof window !== "undefined"
+        ? sessionStorage.getItem(OTP_TOKEN_STORAGE_KEY)?.trim() ?? ""
+        : "";
+    const token = urlToken || stored;
+
+    if (token) {
+      void resumeSession(token);
+    } else {
+      void startSession();
+    }
+  }, [urlToken, resumeSession, startSession]);
 
   useEffect(() => {
     if (!session) return;
@@ -190,6 +267,10 @@ export function AuthPageContent() {
             setInfo("Kod Telegram orqali yuborildi.");
             return;
           }
+          if (data.hasTelegram) {
+            setTgName(data.telegramName ?? "");
+            setTgPhone(data.phone ?? "");
+          }
         }
       } catch {
         // ignore
@@ -218,8 +299,8 @@ export function AuthPageContent() {
         setSubmitting(false);
         setError(
           tgLinked
-            ? "Kod noto'g'ri yoki muddati o'tib ketgan. Qayta urinib ko'ring."
-            : "Avval Telegram botga o'tib kontaktingizni ulashing."
+            ? "Kod noto'g'ri yoki muddati o'tib ketgan. Botdan yangi kod oling yoki qayta urinib ko'ring."
+            : "Avval Telegram botga o'tib kontaktingizni ulashing, keyin kodni kiriting."
         );
         setDigits(Array.from({ length: OTP_LENGTH }, () => ""));
         window.requestAnimationFrame(() => inputsRef.current[0]?.focus());

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { writeFile, mkdir, unlink } from "fs/promises";
 import path from "path";
-import { getAuthSession } from "@/lib/auth-server";
+import { getRequestUser } from "@/lib/request-user";
 import { connectDB } from "@/lib/mongodb";
 import { User } from "@/lib/models/User";
 import { normalizePhone, phoneToLoginEmail } from "@/lib/phone-auth";
@@ -56,12 +56,12 @@ async function updateContact(userId: string, name: string, phone: string) {
 
 export async function PATCH(req: Request) {
   try {
-    const session = await getAuthSession();
-    if (!session?.user?.id) {
+    const user = await getRequestUser(req);
+    if (!user?.id) {
       return NextResponse.json({ error: "Kirish kerak" }, { status: 401 });
     }
 
-    const userId = session.user.id;
+    const userId = user.id;
     const contentType = req.headers.get("content-type") ?? "";
 
     if (contentType.includes("application/json")) {
@@ -112,12 +112,12 @@ export async function PATCH(req: Request) {
 
 export async function DELETE() {
   try {
-    const session = await getAuthSession();
-    if (!session?.user?.id) {
+    const user = await getRequestUser(req);
+    if (!user?.id) {
       return NextResponse.json({ error: "Kirish kerak" }, { status: 401 });
     }
 
-    const userId = session.user.id;
+    const userId = user.id;
     for (const ext of ["jpg", "jpeg", "png", "webp"]) {
       await unlink(path.join(AVATAR_DIR, `${userId}.${ext}`)).catch(() => undefined);
     }

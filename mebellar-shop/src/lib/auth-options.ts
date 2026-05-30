@@ -91,6 +91,7 @@ export const authOptions: NextAuthOptions = {
 
         const session = await verifyOtpCode(token, code);
         if (!session) return null;
+        if (!session.telegram?.id) return null;
 
         await connectDB();
 

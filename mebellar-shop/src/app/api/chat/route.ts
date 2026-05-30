@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthSession } from "@/lib/auth-server";
+import { getRequestUser } from "@/lib/request-user";
 import type { ChatSender } from "@/lib/chat-types";
 import type { SketchData } from "@/lib/sketch-types";
 import {
@@ -15,9 +15,9 @@ import {
 } from "@/lib/chat-persistence";
 
 const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "http://localhost:3000",
+  "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PATCH, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
 export async function OPTIONS() {
@@ -29,15 +29,15 @@ export async function GET() {
   return NextResponse.json(state, { headers: CORS_HEADERS });
 }
 
-async function requireCustomerSession() {
-  const session = await getAuthSession();
-  if (!session?.user?.id) {
+async function requireCustomerSession(req: NextRequest) {
+  const user = await getRequestUser(req);
+  if (!user?.id) {
     return NextResponse.json(
       { error: "Kirish talab qilinadi" },
       { status: 401, headers: CORS_HEADERS }
     );
   }
-  return session;
+  return user;
 }
 
 export async function POST(req: NextRequest) {
@@ -61,8 +61,11 @@ export async function POST(req: NextRequest) {
     const sender = body.sender ?? "customer";
 
     if (sender === "customer") {
-      const auth = await requireCustomerSession();
+      const auth = await requireCustomerSession(req);
       if (auth instanceof NextResponse) return auth;
+      body.customerUserId = body.customerUserId ?? auth.id;
+      body.customerName = body.customerName ?? auth.name;
+      body.customerPhone = body.customerPhone ?? auth.phone;
     }
 
     if (action === "message") {
@@ -154,8 +157,11 @@ export async function PATCH(req: NextRequest) {
     const sender = body.sender ?? "customer";
 
     if (sender === "customer") {
-      const auth = await requireCustomerSession();
+      const auth = await requireCustomerSession(req);
       if (auth instanceof NextResponse) return auth;
+      body.customerUserId = body.customerUserId ?? auth.id;
+      body.customerName = body.customerName ?? auth.name;
+      body.customerPhone = body.customerPhone ?? auth.phone;
     }
 
     if (body.action !== "updateSketch" || !body.sketch) {
